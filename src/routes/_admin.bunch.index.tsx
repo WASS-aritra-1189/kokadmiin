@@ -180,7 +180,7 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
       .then((r) => setBooks((r.data as { data?: { data?: { id: string; title: string }[] } })?.data?.data ?? []))
       .catch(() => setBooks([]));
     // Load all classes (no board filter needed here)
-    api.get("/school-classes", { params: { limit: 200 } }).then((r) => setClasses((r.data as any)?.data?.data ?? []));
+    api.get("/school-classes", { params: { limit: 100 } }).then((r) => setClasses((r.data as any)?.data?.data ?? []));
   }, []);
 
   const toggleId = (key: "schoolIds" | "bookIds", id: string) => {

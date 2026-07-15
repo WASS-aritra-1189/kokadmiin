@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Outlet, Link, createRootRouteWithContext, useRouter } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { Provider } from "react-redux";
-import { makeStore, store, type AppStore } from "@/store";
+import { store } from "@/store";
 
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -74,13 +74,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const storeRef = useRef<AppStore | null>(null);
-  if (storeRef.current === null) {
-    storeRef.current = typeof window !== "undefined" ? store : makeStore();
-  }
 
   return (
-    <Provider store={storeRef.current}>
+    <Provider store={store}>
       <QueryClientProvider client={queryClient}>
         <Outlet />
       </QueryClientProvider>

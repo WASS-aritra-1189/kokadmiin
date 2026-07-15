@@ -171,6 +171,7 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
   const [languages, setLanguages] = useState<{ id: string; name: string }[]>([]);
   const [books, setBooks] = useState<{ id: string; title: string }[]>([]);
+  const [bookToAdd, setBookToAdd] = useState("");
 
   useEffect(() => {
     schoolService.getActive().then((r) => setSchools(r.data ?? []));
@@ -185,6 +186,20 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
       ...f,
       [key]: f[key].includes(id) ? f[key].filter((x: string) => x !== id) : [...f[key], id],
     }));
+  };
+
+  const addBook = () => {
+    if (!bookToAdd) return;
+    setForm((current) => (
+      current.bookIds.includes(bookToAdd)
+        ? current
+        : { ...current, bookIds: [...current.bookIds, bookToAdd] }
+    ));
+    setBookToAdd("");
+  };
+
+  const removeBook = (id: string) => {
+    setForm((current) => ({ ...current, bookIds: current.bookIds.filter((bookId) => bookId !== id) }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -308,19 +323,45 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
               <label className="mb-1 block text-[11px] font-medium text-[#374151]">
                 Books * <span className="text-[#6B7280]">({form.bookIds.length} selected)</span>
               </label>
-              <div className="max-h-40 overflow-y-auto rounded-md border border-[#E5E7EB] bg-white p-2 space-y-1">
-                {books.length === 0 && <div className="text-[11px] text-[#9CA3AF]">No books found</div>}
-                {books.map((b) => (
-                  <label key={b.id} className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-[#F9FAFB]">
-                    <input
-                      type="checkbox"
-                      checked={form.bookIds.includes(b.id)}
-                      onChange={() => toggleId("bookIds", b.id)}
-                      className="h-3 w-3 rounded"
-                    />
-                    <span className="text-[12px]">{b.title}</span>
-                  </label>
-                ))}
+              <div className="flex gap-2">
+                <select
+                  value={bookToAdd}
+                  onChange={(e) => setBookToAdd(e.target.value)}
+                  className={inp}
+                  disabled={books.length === 0}
+                >
+                  <option value="">{books.length === 0 ? "No books found" : "Select a book…"}</option>
+                  {books
+                    .filter((book) => !form.bookIds.includes(book.id))
+                    .map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}
+                </select>
+                <button
+                  type="button"
+                  onClick={addBook}
+                  disabled={!bookToAdd}
+                  className="h-8 shrink-0 rounded-md bg-[#111827] px-3 text-[12px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Add book
+                </button>
+              </div>
+              <div className="mt-2 max-h-40 overflow-y-auto rounded-md border border-[#E5E7EB] bg-white p-2 space-y-1">
+                {form.bookIds.length === 0 && <div className="text-[11px] text-[#9CA3AF]">Select a book from the dropdown to add it.</div>}
+                {form.bookIds.map((bookId) => {
+                  const book = books.find((entry) => entry.id === bookId) ?? item?.books?.find((entry) => entry.id === bookId);
+                  return (
+                    <div key={bookId} className="flex items-center justify-between gap-2 rounded px-1 py-1 hover:bg-[#F9FAFB]">
+                      <span className="truncate text-[12px]">{book?.title ?? "Selected book"}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeBook(bookId)}
+                        className="rounded p-0.5 text-[#6B7280] hover:bg-[#E5E7EB] hover:text-[#111827]"
+                        aria-label={`Remove ${book?.title ?? "book"}`}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

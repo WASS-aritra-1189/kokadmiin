@@ -176,7 +176,9 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
   useEffect(() => {
     schoolService.getActive().then((r) => setSchools(r.data ?? []));
     api.get("/languages/active").then((r) => setLanguages((r.data as any)?.data ?? []));
-    api.get("/books/active").then((r) => setBooks((r.data as any)?.data ?? [])).catch(() => {});
+    api.get("/books", { params: { status: "ACTIVE" } })
+      .then((r) => setBooks((r.data as { data?: { data?: { id: string; title: string }[] } })?.data?.data ?? []))
+      .catch(() => setBooks([]));
     // Load all classes (no board filter needed here)
     api.get("/school-classes", { params: { limit: 200 } }).then((r) => setClasses((r.data as any)?.data?.data ?? []));
   }, []);

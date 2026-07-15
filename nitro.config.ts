@@ -1,5 +1,5 @@
-import { defineNitroConfig } from 'nitro';
+import { defineConfig } from 'nitro';
 
-export default defineNitroConfig({
+export default defineConfig({
   preset: 'node-server',
 });

@@ -1,17 +1,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  Outlet,
-  Link,
-  createRootRouteWithContext,
-  useRouter,
-  HeadContent,
-  Scripts,
-} from "@tanstack/react-router";
-import { useEffect, useRef, type ReactNode } from "react";
+import { Outlet, Link, createRootRouteWithContext, useRouter } from "@tanstack/react-router";
+import { useEffect, useRef } from "react";
 import { Provider } from "react-redux";
 import { makeStore, store, type AppStore } from "@/store";
 
-import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
 function NotFoundComponent() {
@@ -75,48 +67,10 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "kokbooks admin— admin apnnel" },
-      { name: "description", content: "kokbooks  Admin panel for a bookstore e-commerce: inventory, orders, shipping, GST invoicing, and reporting." },
-      { property: "og:title", content: "kokbooks admin— admin apnnel" },
-      { property: "og:description", content: "kokbooks  Admin panel for a bookstore e-commerce: inventory, orders, shipping, GST invoicing, and reporting." },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "kokbooks admin— admin apnnel" },
-      { name: "twitter:description", content: "kokbooks  Admin panel for a bookstore e-commerce: inventory, orders, shipping, GST invoicing, and reporting." },
-      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/tay86JsBSNanxd0h9ehpTiMCF3s1/social-images/social-1783055819112-__Vendor_Information_for_the_2026_Audit.webp" },
-      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/tay86JsBSNanxd0h9ehpTiMCF3s1/social-images/social-1783055819112-__Vendor_Information_for_the_2026_Audit.webp" },
-    ],
-    links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
-    ],
-  }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
-
-function RootShell({ children }: { children: ReactNode }) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();

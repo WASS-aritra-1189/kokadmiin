@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Download, Plus, Search, Upload, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store";
-import { fetchBooks, createBook, updateBook } from "@/store/slices/booksSlice";
+import { fetchBooks, createBook, updateBook, deleteBook, deleteMultipleBooks } from "@/store/slices/booksSlice";
 import { catalogApi, booksService, type BookItem, type CreateBookPayload, type DropdownItem, type BookLanguage, type BookClass, type BookSubject } from "@/services/books.service";
 
 export const Route = createFileRoute("/_admin/books/")({
@@ -87,7 +87,17 @@ function BooksPage() {
           {selected.size > 0 && (
             <div className="ml-auto flex items-center gap-2 rounded-md bg-[#EEF2FF] px-2 py-1 text-[11px] font-medium text-[#4F46E5]">
               {selected.size} selected
-              <button className="rounded-md bg-white px-2 py-0.5 text-[10px] text-[#EF4444]">Delete</button>
+              <button 
+                onClick={async () => {
+                  if (!confirm(`Delete ${selected.size} book(s)?`)) return;
+                  await dispatch(deleteMultipleBooks(Array.from(selected)));
+                  setSelected(new Set());
+                  load();
+                }} 
+                className="rounded-md bg-white px-2 py-0.5 text-[10px] text-[#EF4444]"
+              >
+                Delete
+              </button>
             </div>
           )}
         </div>
@@ -144,12 +154,24 @@ function BooksPage() {
                   </td>
                   <td className="px-3 py-2"><StatusChip status={b.status} /></td>
                   <td className="px-3 py-2 text-right">
-                    <button
-                      onClick={() => setSheet({ open: true, book: b })}
-                      className="rounded-md border border-[#E5E7EB] px-2 py-1 text-[11px] font-medium text-[#374151] hover:bg-[#F9FAFB]"
-                    >
-                      Edit
-                    </button>
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => setSheet({ open: true, book: b })}
+                        className="rounded-md border border-[#E5E7EB] px-2 py-1 text-[11px] font-medium text-[#374151] hover:bg-[#F9FAFB]"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!confirm(`Delete "${b.title}"?`)) return;
+                          await dispatch(deleteBook(b.id));
+                          load();
+                        }}
+                        className="rounded-md border border-[#E5E7EB] px-2 py-1 text-[11px] font-medium text-[#EF4444] hover:bg-[#FEF2F2]"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}

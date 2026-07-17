@@ -89,10 +89,7 @@ export const NAV: NavGroup[] = [
     items: [
       { label: "Gateways", to: "/payments/gateways" },
       { label: "Transactions", to: "/payments/transactions" },
-      { label: "UPI", to: "/payments/upi" },
-      { label: "Cards", to: "/payments/cards" },
-      { label: "Netbanking", to: "/payments/netbanking" },
-      { label: "Wallets", to: "/payments/wallets" },
+      
       { label: "COD", to: "/payments/cod" },
      
       { label: "Refunds", to: "/payments/refunds" },
@@ -146,25 +143,23 @@ export const NAV: NavGroup[] = [
       { label: "Reports Hub", to: "/reports" },
       { label: "Sales", to: "/reports/sales" },
       { label: "Revenue", to: "/reports/revenue" },
-      { label: "P&L", to: "/reports/pnl" },
-      { label: "Inventory", to: "/reports/inventory" },
-      { label: "Customers", to: "/reports/customers" },
-      { label: "Tax", to: "/reports/tax" },
-      { label: "Courier", to: "/reports/courier" },
-      { label: "Marketing", to: "/reports/marketing" },
-      { label: "Abandoned Cart", to: "/reports/abandoned-cart" },
+      { label: "Inventory Analysis", to: "/reports/inventory" },
+      
+      { label: "Product Analytics", to: "/dashboard/product-analytics" },
+      { label: "Order Analytics", to: "/dashboard/order-analysis" },
     ],
   },
   {
     label: "Users & Admin", icon: ShieldCheck,
     items: [
-      { label: "Users", to: "/users" },
-      { label: "Roles", to: "/users/roles" },
-      { label: "Permissions", to: "/users/permissions" },
-      { label: "Staff", to: "/users/staff" },
+      { label: "Designations", to: "/users/designations" },
+      
+      { label: "Staff Members", to: "/users/staff" },
+      { label: "Menus", to: "/users/menus" },
+      { label: "Designation Permissions", to: "/users/designation-permissions" },
+      { label: "Staff Permissions", to: "/users/staff-permissions" },
       { label: "Activity Logs", to: "/users/activity" },
       { label: "Login History", to: "/users/login-history" },
-      { label: "Audit Logs", to: "/users/audit" },
     ],
   },
   {
@@ -184,11 +179,9 @@ export const NAV: NavGroup[] = [
      
       { label: "Email API", to: "/integrations/email" },
       { label: "SMS Gateway", to: "/integrations/sms" },
-      { label: "WhatsApp API", to: "/integrations/whatsapp" },
-      { label: "Google Analytics", to: "/integrations/analytics" },
+      
     
      
-      { label: "Webhooks", to: "/integrations/webhooks" },
     ],
   },
   {

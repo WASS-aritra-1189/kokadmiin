@@ -39,6 +39,13 @@ export const deleteBook = createAsyncThunk("books/delete", async (id: string, { 
   catch (err: any) { return rejectWithValue(err.response?.data?.message ?? "Failed to delete book"); }
 });
 
+export const deleteMultipleBooks = createAsyncThunk("books/deleteMultiple", async (ids: string[], { rejectWithValue }) => {
+  try {
+    await Promise.all(ids.map(id => booksService.delete(id)));
+    return ids;
+  } catch (err: any) { return rejectWithValue(err.response?.data?.message ?? "Failed to delete books"); }
+});
+
 const booksSlice = createSlice({
   name: "books",
   initialState,
@@ -70,7 +77,13 @@ const booksSlice = createSlice({
 
       .addCase(deleteBook.fulfilled, (state, action) => {
         state.items = state.items.filter((b) => b.id !== action.payload);
-      });
+      })
+      .addCase(deleteMultipleBooks.pending, (state) => { state.saving = true; state.error = null; })
+      .addCase(deleteMultipleBooks.fulfilled, (state, action) => {
+        state.saving = false;
+        state.items = state.items.filter((b) => !action.payload.includes(b.id));
+      })
+      .addCase(deleteMultipleBooks.rejected, (state, action) => { state.saving = false; state.error = action.payload as string; });
   },
 });
 

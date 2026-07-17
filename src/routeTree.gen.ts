@@ -17,11 +17,17 @@ import { Route as AdminSplatRouteImport } from './routes/_admin.$'
 import { Route as AdminSchoolsIndexRouteImport } from './routes/_admin.schools.index'
 import { Route as AdminReportsIndexRouteImport } from './routes/_admin.reports.index'
 import { Route as AdminOrdersIndexRouteImport } from './routes/_admin.orders.index'
+import { Route as AdminDashboardIndexRouteImport } from './routes/_admin.dashboard.index'
 import { Route as AdminCustomersIndexRouteImport } from './routes/_admin.customers.index'
 import { Route as AdminBunchIndexRouteImport } from './routes/_admin.bunch.index'
 import { Route as AdminBooksIndexRouteImport } from './routes/_admin.books.index'
 import { Route as PrintLabelIdRouteImport } from './routes/print.label.$id'
 import { Route as PrintInvoiceIdRouteImport } from './routes/print.invoice.$id'
+import { Route as AdminUsersStaffPermissionsRouteImport } from './routes/_admin.users.staff-permissions'
+import { Route as AdminUsersStaffRouteImport } from './routes/_admin.users.staff'
+import { Route as AdminUsersMenusRouteImport } from './routes/_admin.users.menus'
+import { Route as AdminUsersDesignationsRouteImport } from './routes/_admin.users.designations'
+import { Route as AdminUsersDesignationPermissionsRouteImport } from './routes/_admin.users.designation-permissions'
 import { Route as AdminShippingZonesRouteImport } from './routes/_admin.shipping.zones'
 import { Route as AdminShippingTrackingRouteImport } from './routes/_admin.shipping.tracking'
 import { Route as AdminShippingShipmentsRouteImport } from './routes/_admin.shipping.shipments'
@@ -49,6 +55,9 @@ import { Route as AdminSettingsCurrencyRouteImport } from './routes/_admin.setti
 import { Route as AdminSettingsCompanyRouteImport } from './routes/_admin.settings.company'
 import { Route as AdminSettingsBackupRouteImport } from './routes/_admin.settings.backup'
 import { Route as AdminSchoolsClassesRouteImport } from './routes/_admin.schools.classes'
+import { Route as AdminReportsSalesRouteImport } from './routes/_admin.reports.sales'
+import { Route as AdminReportsRevenueRouteImport } from './routes/_admin.reports.revenue'
+import { Route as AdminReportsInventoryRouteImport } from './routes/_admin.reports.inventory'
 import { Route as AdminOrdersReturnsRouteImport } from './routes/_admin.orders.returns'
 import { Route as AdminOrdersRefundsRouteImport } from './routes/_admin.orders.refunds'
 import { Route as AdminOrdersProcessingRouteImport } from './routes/_admin.orders.processing'
@@ -75,6 +84,8 @@ import { Route as AdminIntegrationsEmailRouteImport } from './routes/_admin.inte
 import { Route as AdminIntegrationsCourierRouteImport } from './routes/_admin.integrations.courier'
 import { Route as AdminIntegrationsAnalyticsRouteImport } from './routes/_admin.integrations.analytics'
 import { Route as AdminIntegrationsAccountingRouteImport } from './routes/_admin.integrations.accounting'
+import { Route as AdminDashboardProductAnalyticsRouteImport } from './routes/_admin.dashboard.product-analytics'
+import { Route as AdminDashboardOrderAnalysisRouteImport } from './routes/_admin.dashboard.order-analysis'
 import { Route as AdminCustomersWishlistRouteImport } from './routes/_admin.customers.wishlist'
 import { Route as AdminCustomersTicketsRouteImport } from './routes/_admin.customers.tickets'
 import { Route as AdminCustomersReviewsRouteImport } from './routes/_admin.customers.reviews'
@@ -138,6 +149,11 @@ const AdminOrdersIndexRoute = AdminOrdersIndexRouteImport.update({
   path: '/orders/',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminDashboardIndexRoute = AdminDashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminDashboardRoute,
+} as any)
 const AdminCustomersIndexRoute = AdminCustomersIndexRouteImport.update({
   id: '/customers/',
   path: '/customers/',
@@ -163,6 +179,33 @@ const PrintInvoiceIdRoute = PrintInvoiceIdRouteImport.update({
   path: '/print/invoice/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsersStaffPermissionsRoute =
+  AdminUsersStaffPermissionsRouteImport.update({
+    id: '/users/staff-permissions',
+    path: '/users/staff-permissions',
+    getParentRoute: () => AdminRoute,
+  } as any)
+const AdminUsersStaffRoute = AdminUsersStaffRouteImport.update({
+  id: '/users/staff',
+  path: '/users/staff',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersMenusRoute = AdminUsersMenusRouteImport.update({
+  id: '/users/menus',
+  path: '/users/menus',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersDesignationsRoute = AdminUsersDesignationsRouteImport.update({
+  id: '/users/designations',
+  path: '/users/designations',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersDesignationPermissionsRoute =
+  AdminUsersDesignationPermissionsRouteImport.update({
+    id: '/users/designation-permissions',
+    path: '/users/designation-permissions',
+    getParentRoute: () => AdminRoute,
+  } as any)
 const AdminShippingZonesRoute = AdminShippingZonesRouteImport.update({
   id: '/shipping/zones',
   path: '/shipping/zones',
@@ -299,6 +342,21 @@ const AdminSettingsBackupRoute = AdminSettingsBackupRouteImport.update({
 const AdminSchoolsClassesRoute = AdminSchoolsClassesRouteImport.update({
   id: '/schools/classes',
   path: '/schools/classes',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReportsSalesRoute = AdminReportsSalesRouteImport.update({
+  id: '/reports/sales',
+  path: '/reports/sales',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReportsRevenueRoute = AdminReportsRevenueRouteImport.update({
+  id: '/reports/revenue',
+  path: '/reports/revenue',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminReportsInventoryRoute = AdminReportsInventoryRouteImport.update({
+  id: '/reports/inventory',
+  path: '/reports/inventory',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminOrdersReturnsRoute = AdminOrdersReturnsRouteImport.update({
@@ -440,6 +498,18 @@ const AdminIntegrationsAccountingRoute =
     path: '/integrations/accounting',
     getParentRoute: () => AdminRoute,
   } as any)
+const AdminDashboardProductAnalyticsRoute =
+  AdminDashboardProductAnalyticsRouteImport.update({
+    id: '/product-analytics',
+    path: '/product-analytics',
+    getParentRoute: () => AdminDashboardRoute,
+  } as any)
+const AdminDashboardOrderAnalysisRoute =
+  AdminDashboardOrderAnalysisRouteImport.update({
+    id: '/order-analysis',
+    path: '/order-analysis',
+    getParentRoute: () => AdminDashboardRoute,
+  } as any)
 const AdminCustomersWishlistRoute = AdminCustomersWishlistRouteImport.update({
   id: '/customers/wishlist',
   path: '/customers/wishlist',
@@ -561,7 +631,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/$': typeof AdminSplatRoute
-  '/dashboard': typeof AdminDashboardRoute
+  '/dashboard': typeof AdminDashboardRouteWithChildren
   '/books/bulk-update': typeof AdminBooksBulkUpdateRoute
   '/books/bulk-upload': typeof AdminBooksBulkUploadRoute
   '/books/import-export': typeof AdminBooksImportExportRoute
@@ -585,6 +655,8 @@ export interface FileRoutesByFullPath {
   '/customers/reviews': typeof AdminCustomersReviewsRoute
   '/customers/tickets': typeof AdminCustomersTicketsRoute
   '/customers/wishlist': typeof AdminCustomersWishlistRoute
+  '/dashboard/order-analysis': typeof AdminDashboardOrderAnalysisRoute
+  '/dashboard/product-analytics': typeof AdminDashboardProductAnalyticsRoute
   '/integrations/accounting': typeof AdminIntegrationsAccountingRoute
   '/integrations/analytics': typeof AdminIntegrationsAnalyticsRoute
   '/integrations/courier': typeof AdminIntegrationsCourierRoute
@@ -611,6 +683,9 @@ export interface FileRoutesByFullPath {
   '/orders/processing': typeof AdminOrdersProcessingRoute
   '/orders/refunds': typeof AdminOrdersRefundsRoute
   '/orders/returns': typeof AdminOrdersReturnsRoute
+  '/reports/inventory': typeof AdminReportsInventoryRoute
+  '/reports/revenue': typeof AdminReportsRevenueRoute
+  '/reports/sales': typeof AdminReportsSalesRoute
   '/schools/classes': typeof AdminSchoolsClassesRoute
   '/settings/backup': typeof AdminSettingsBackupRoute
   '/settings/company': typeof AdminSettingsCompanyRoute
@@ -638,11 +713,17 @@ export interface FileRoutesByFullPath {
   '/shipping/shipments': typeof AdminShippingShipmentsRoute
   '/shipping/tracking': typeof AdminShippingTrackingRoute
   '/shipping/zones': typeof AdminShippingZonesRoute
+  '/users/designation-permissions': typeof AdminUsersDesignationPermissionsRoute
+  '/users/designations': typeof AdminUsersDesignationsRoute
+  '/users/menus': typeof AdminUsersMenusRoute
+  '/users/staff': typeof AdminUsersStaffRoute
+  '/users/staff-permissions': typeof AdminUsersStaffPermissionsRoute
   '/print/invoice/$id': typeof PrintInvoiceIdRoute
   '/print/label/$id': typeof PrintLabelIdRoute
   '/books/': typeof AdminBooksIndexRoute
   '/bunch/': typeof AdminBunchIndexRoute
   '/customers/': typeof AdminCustomersIndexRoute
+  '/dashboard/': typeof AdminDashboardIndexRoute
   '/orders/': typeof AdminOrdersIndexRoute
   '/reports/': typeof AdminReportsIndexRoute
   '/schools/': typeof AdminSchoolsIndexRoute
@@ -651,7 +732,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/$': typeof AdminSplatRoute
-  '/dashboard': typeof AdminDashboardRoute
   '/books/bulk-update': typeof AdminBooksBulkUpdateRoute
   '/books/bulk-upload': typeof AdminBooksBulkUploadRoute
   '/books/import-export': typeof AdminBooksImportExportRoute
@@ -675,6 +755,8 @@ export interface FileRoutesByTo {
   '/customers/reviews': typeof AdminCustomersReviewsRoute
   '/customers/tickets': typeof AdminCustomersTicketsRoute
   '/customers/wishlist': typeof AdminCustomersWishlistRoute
+  '/dashboard/order-analysis': typeof AdminDashboardOrderAnalysisRoute
+  '/dashboard/product-analytics': typeof AdminDashboardProductAnalyticsRoute
   '/integrations/accounting': typeof AdminIntegrationsAccountingRoute
   '/integrations/analytics': typeof AdminIntegrationsAnalyticsRoute
   '/integrations/courier': typeof AdminIntegrationsCourierRoute
@@ -701,6 +783,9 @@ export interface FileRoutesByTo {
   '/orders/processing': typeof AdminOrdersProcessingRoute
   '/orders/refunds': typeof AdminOrdersRefundsRoute
   '/orders/returns': typeof AdminOrdersReturnsRoute
+  '/reports/inventory': typeof AdminReportsInventoryRoute
+  '/reports/revenue': typeof AdminReportsRevenueRoute
+  '/reports/sales': typeof AdminReportsSalesRoute
   '/schools/classes': typeof AdminSchoolsClassesRoute
   '/settings/backup': typeof AdminSettingsBackupRoute
   '/settings/company': typeof AdminSettingsCompanyRoute
@@ -728,11 +813,17 @@ export interface FileRoutesByTo {
   '/shipping/shipments': typeof AdminShippingShipmentsRoute
   '/shipping/tracking': typeof AdminShippingTrackingRoute
   '/shipping/zones': typeof AdminShippingZonesRoute
+  '/users/designation-permissions': typeof AdminUsersDesignationPermissionsRoute
+  '/users/designations': typeof AdminUsersDesignationsRoute
+  '/users/menus': typeof AdminUsersMenusRoute
+  '/users/staff': typeof AdminUsersStaffRoute
+  '/users/staff-permissions': typeof AdminUsersStaffPermissionsRoute
   '/print/invoice/$id': typeof PrintInvoiceIdRoute
   '/print/label/$id': typeof PrintLabelIdRoute
   '/books': typeof AdminBooksIndexRoute
   '/bunch': typeof AdminBunchIndexRoute
   '/customers': typeof AdminCustomersIndexRoute
+  '/dashboard': typeof AdminDashboardIndexRoute
   '/orders': typeof AdminOrdersIndexRoute
   '/reports': typeof AdminReportsIndexRoute
   '/schools': typeof AdminSchoolsIndexRoute
@@ -743,7 +834,7 @@ export interface FileRoutesById {
   '/_admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/_admin/$': typeof AdminSplatRoute
-  '/_admin/dashboard': typeof AdminDashboardRoute
+  '/_admin/dashboard': typeof AdminDashboardRouteWithChildren
   '/_admin/books/bulk-update': typeof AdminBooksBulkUpdateRoute
   '/_admin/books/bulk-upload': typeof AdminBooksBulkUploadRoute
   '/_admin/books/import-export': typeof AdminBooksImportExportRoute
@@ -767,6 +858,8 @@ export interface FileRoutesById {
   '/_admin/customers/reviews': typeof AdminCustomersReviewsRoute
   '/_admin/customers/tickets': typeof AdminCustomersTicketsRoute
   '/_admin/customers/wishlist': typeof AdminCustomersWishlistRoute
+  '/_admin/dashboard/order-analysis': typeof AdminDashboardOrderAnalysisRoute
+  '/_admin/dashboard/product-analytics': typeof AdminDashboardProductAnalyticsRoute
   '/_admin/integrations/accounting': typeof AdminIntegrationsAccountingRoute
   '/_admin/integrations/analytics': typeof AdminIntegrationsAnalyticsRoute
   '/_admin/integrations/courier': typeof AdminIntegrationsCourierRoute
@@ -793,6 +886,9 @@ export interface FileRoutesById {
   '/_admin/orders/processing': typeof AdminOrdersProcessingRoute
   '/_admin/orders/refunds': typeof AdminOrdersRefundsRoute
   '/_admin/orders/returns': typeof AdminOrdersReturnsRoute
+  '/_admin/reports/inventory': typeof AdminReportsInventoryRoute
+  '/_admin/reports/revenue': typeof AdminReportsRevenueRoute
+  '/_admin/reports/sales': typeof AdminReportsSalesRoute
   '/_admin/schools/classes': typeof AdminSchoolsClassesRoute
   '/_admin/settings/backup': typeof AdminSettingsBackupRoute
   '/_admin/settings/company': typeof AdminSettingsCompanyRoute
@@ -820,11 +916,17 @@ export interface FileRoutesById {
   '/_admin/shipping/shipments': typeof AdminShippingShipmentsRoute
   '/_admin/shipping/tracking': typeof AdminShippingTrackingRoute
   '/_admin/shipping/zones': typeof AdminShippingZonesRoute
+  '/_admin/users/designation-permissions': typeof AdminUsersDesignationPermissionsRoute
+  '/_admin/users/designations': typeof AdminUsersDesignationsRoute
+  '/_admin/users/menus': typeof AdminUsersMenusRoute
+  '/_admin/users/staff': typeof AdminUsersStaffRoute
+  '/_admin/users/staff-permissions': typeof AdminUsersStaffPermissionsRoute
   '/print/invoice/$id': typeof PrintInvoiceIdRoute
   '/print/label/$id': typeof PrintLabelIdRoute
   '/_admin/books/': typeof AdminBooksIndexRoute
   '/_admin/bunch/': typeof AdminBunchIndexRoute
   '/_admin/customers/': typeof AdminCustomersIndexRoute
+  '/_admin/dashboard/': typeof AdminDashboardIndexRoute
   '/_admin/orders/': typeof AdminOrdersIndexRoute
   '/_admin/reports/': typeof AdminReportsIndexRoute
   '/_admin/schools/': typeof AdminSchoolsIndexRoute
@@ -859,6 +961,8 @@ export interface FileRouteTypes {
     | '/customers/reviews'
     | '/customers/tickets'
     | '/customers/wishlist'
+    | '/dashboard/order-analysis'
+    | '/dashboard/product-analytics'
     | '/integrations/accounting'
     | '/integrations/analytics'
     | '/integrations/courier'
@@ -885,6 +989,9 @@ export interface FileRouteTypes {
     | '/orders/processing'
     | '/orders/refunds'
     | '/orders/returns'
+    | '/reports/inventory'
+    | '/reports/revenue'
+    | '/reports/sales'
     | '/schools/classes'
     | '/settings/backup'
     | '/settings/company'
@@ -912,11 +1019,17 @@ export interface FileRouteTypes {
     | '/shipping/shipments'
     | '/shipping/tracking'
     | '/shipping/zones'
+    | '/users/designation-permissions'
+    | '/users/designations'
+    | '/users/menus'
+    | '/users/staff'
+    | '/users/staff-permissions'
     | '/print/invoice/$id'
     | '/print/label/$id'
     | '/books/'
     | '/bunch/'
     | '/customers/'
+    | '/dashboard/'
     | '/orders/'
     | '/reports/'
     | '/schools/'
@@ -925,7 +1038,6 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/$'
-    | '/dashboard'
     | '/books/bulk-update'
     | '/books/bulk-upload'
     | '/books/import-export'
@@ -949,6 +1061,8 @@ export interface FileRouteTypes {
     | '/customers/reviews'
     | '/customers/tickets'
     | '/customers/wishlist'
+    | '/dashboard/order-analysis'
+    | '/dashboard/product-analytics'
     | '/integrations/accounting'
     | '/integrations/analytics'
     | '/integrations/courier'
@@ -975,6 +1089,9 @@ export interface FileRouteTypes {
     | '/orders/processing'
     | '/orders/refunds'
     | '/orders/returns'
+    | '/reports/inventory'
+    | '/reports/revenue'
+    | '/reports/sales'
     | '/schools/classes'
     | '/settings/backup'
     | '/settings/company'
@@ -1002,11 +1119,17 @@ export interface FileRouteTypes {
     | '/shipping/shipments'
     | '/shipping/tracking'
     | '/shipping/zones'
+    | '/users/designation-permissions'
+    | '/users/designations'
+    | '/users/menus'
+    | '/users/staff'
+    | '/users/staff-permissions'
     | '/print/invoice/$id'
     | '/print/label/$id'
     | '/books'
     | '/bunch'
     | '/customers'
+    | '/dashboard'
     | '/orders'
     | '/reports'
     | '/schools'
@@ -1040,6 +1163,8 @@ export interface FileRouteTypes {
     | '/_admin/customers/reviews'
     | '/_admin/customers/tickets'
     | '/_admin/customers/wishlist'
+    | '/_admin/dashboard/order-analysis'
+    | '/_admin/dashboard/product-analytics'
     | '/_admin/integrations/accounting'
     | '/_admin/integrations/analytics'
     | '/_admin/integrations/courier'
@@ -1066,6 +1191,9 @@ export interface FileRouteTypes {
     | '/_admin/orders/processing'
     | '/_admin/orders/refunds'
     | '/_admin/orders/returns'
+    | '/_admin/reports/inventory'
+    | '/_admin/reports/revenue'
+    | '/_admin/reports/sales'
     | '/_admin/schools/classes'
     | '/_admin/settings/backup'
     | '/_admin/settings/company'
@@ -1093,11 +1221,17 @@ export interface FileRouteTypes {
     | '/_admin/shipping/shipments'
     | '/_admin/shipping/tracking'
     | '/_admin/shipping/zones'
+    | '/_admin/users/designation-permissions'
+    | '/_admin/users/designations'
+    | '/_admin/users/menus'
+    | '/_admin/users/staff'
+    | '/_admin/users/staff-permissions'
     | '/print/invoice/$id'
     | '/print/label/$id'
     | '/_admin/books/'
     | '/_admin/bunch/'
     | '/_admin/customers/'
+    | '/_admin/dashboard/'
     | '/_admin/orders/'
     | '/_admin/reports/'
     | '/_admin/schools/'
@@ -1169,6 +1303,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOrdersIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/dashboard/': {
+      id: '/_admin/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof AdminDashboardIndexRouteImport
+      parentRoute: typeof AdminDashboardRoute
+    }
     '/_admin/customers/': {
       id: '/_admin/customers/'
       path: '/customers'
@@ -1203,6 +1344,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/print/invoice/$id'
       preLoaderRoute: typeof PrintInvoiceIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_admin/users/staff-permissions': {
+      id: '/_admin/users/staff-permissions'
+      path: '/users/staff-permissions'
+      fullPath: '/users/staff-permissions'
+      preLoaderRoute: typeof AdminUsersStaffPermissionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/users/staff': {
+      id: '/_admin/users/staff'
+      path: '/users/staff'
+      fullPath: '/users/staff'
+      preLoaderRoute: typeof AdminUsersStaffRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/users/menus': {
+      id: '/_admin/users/menus'
+      path: '/users/menus'
+      fullPath: '/users/menus'
+      preLoaderRoute: typeof AdminUsersMenusRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/users/designations': {
+      id: '/_admin/users/designations'
+      path: '/users/designations'
+      fullPath: '/users/designations'
+      preLoaderRoute: typeof AdminUsersDesignationsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/users/designation-permissions': {
+      id: '/_admin/users/designation-permissions'
+      path: '/users/designation-permissions'
+      fullPath: '/users/designation-permissions'
+      preLoaderRoute: typeof AdminUsersDesignationPermissionsRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/_admin/shipping/zones': {
       id: '/_admin/shipping/zones'
@@ -1393,6 +1569,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSchoolsClassesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/reports/sales': {
+      id: '/_admin/reports/sales'
+      path: '/reports/sales'
+      fullPath: '/reports/sales'
+      preLoaderRoute: typeof AdminReportsSalesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/reports/revenue': {
+      id: '/_admin/reports/revenue'
+      path: '/reports/revenue'
+      fullPath: '/reports/revenue'
+      preLoaderRoute: typeof AdminReportsRevenueRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/reports/inventory': {
+      id: '/_admin/reports/inventory'
+      path: '/reports/inventory'
+      fullPath: '/reports/inventory'
+      preLoaderRoute: typeof AdminReportsInventoryRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/orders/returns': {
       id: '/_admin/orders/returns'
       path: '/orders/returns'
@@ -1575,6 +1772,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIntegrationsAccountingRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/dashboard/product-analytics': {
+      id: '/_admin/dashboard/product-analytics'
+      path: '/product-analytics'
+      fullPath: '/dashboard/product-analytics'
+      preLoaderRoute: typeof AdminDashboardProductAnalyticsRouteImport
+      parentRoute: typeof AdminDashboardRoute
+    }
+    '/_admin/dashboard/order-analysis': {
+      id: '/_admin/dashboard/order-analysis'
+      path: '/order-analysis'
+      fullPath: '/dashboard/order-analysis'
+      preLoaderRoute: typeof AdminDashboardOrderAnalysisRouteImport
+      parentRoute: typeof AdminDashboardRoute
+    }
     '/_admin/customers/wishlist': {
       id: '/_admin/customers/wishlist'
       path: '/customers/wishlist'
@@ -1739,9 +1950,25 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AdminDashboardRouteChildren {
+  AdminDashboardOrderAnalysisRoute: typeof AdminDashboardOrderAnalysisRoute
+  AdminDashboardProductAnalyticsRoute: typeof AdminDashboardProductAnalyticsRoute
+  AdminDashboardIndexRoute: typeof AdminDashboardIndexRoute
+}
+
+const AdminDashboardRouteChildren: AdminDashboardRouteChildren = {
+  AdminDashboardOrderAnalysisRoute: AdminDashboardOrderAnalysisRoute,
+  AdminDashboardProductAnalyticsRoute: AdminDashboardProductAnalyticsRoute,
+  AdminDashboardIndexRoute: AdminDashboardIndexRoute,
+}
+
+const AdminDashboardRouteWithChildren = AdminDashboardRoute._addFileChildren(
+  AdminDashboardRouteChildren,
+)
+
 interface AdminRouteChildren {
   AdminSplatRoute: typeof AdminSplatRoute
-  AdminDashboardRoute: typeof AdminDashboardRoute
+  AdminDashboardRoute: typeof AdminDashboardRouteWithChildren
   AdminBooksBulkUpdateRoute: typeof AdminBooksBulkUpdateRoute
   AdminBooksBulkUploadRoute: typeof AdminBooksBulkUploadRoute
   AdminBooksImportExportRoute: typeof AdminBooksImportExportRoute
@@ -1791,6 +2018,9 @@ interface AdminRouteChildren {
   AdminOrdersProcessingRoute: typeof AdminOrdersProcessingRoute
   AdminOrdersRefundsRoute: typeof AdminOrdersRefundsRoute
   AdminOrdersReturnsRoute: typeof AdminOrdersReturnsRoute
+  AdminReportsInventoryRoute: typeof AdminReportsInventoryRoute
+  AdminReportsRevenueRoute: typeof AdminReportsRevenueRoute
+  AdminReportsSalesRoute: typeof AdminReportsSalesRoute
   AdminSchoolsClassesRoute: typeof AdminSchoolsClassesRoute
   AdminSettingsBackupRoute: typeof AdminSettingsBackupRoute
   AdminSettingsCompanyRoute: typeof AdminSettingsCompanyRoute
@@ -1818,6 +2048,11 @@ interface AdminRouteChildren {
   AdminShippingShipmentsRoute: typeof AdminShippingShipmentsRoute
   AdminShippingTrackingRoute: typeof AdminShippingTrackingRoute
   AdminShippingZonesRoute: typeof AdminShippingZonesRoute
+  AdminUsersDesignationPermissionsRoute: typeof AdminUsersDesignationPermissionsRoute
+  AdminUsersDesignationsRoute: typeof AdminUsersDesignationsRoute
+  AdminUsersMenusRoute: typeof AdminUsersMenusRoute
+  AdminUsersStaffRoute: typeof AdminUsersStaffRoute
+  AdminUsersStaffPermissionsRoute: typeof AdminUsersStaffPermissionsRoute
   AdminBooksIndexRoute: typeof AdminBooksIndexRoute
   AdminBunchIndexRoute: typeof AdminBunchIndexRoute
   AdminCustomersIndexRoute: typeof AdminCustomersIndexRoute
@@ -1828,7 +2063,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminSplatRoute: AdminSplatRoute,
-  AdminDashboardRoute: AdminDashboardRoute,
+  AdminDashboardRoute: AdminDashboardRouteWithChildren,
   AdminBooksBulkUpdateRoute: AdminBooksBulkUpdateRoute,
   AdminBooksBulkUploadRoute: AdminBooksBulkUploadRoute,
   AdminBooksImportExportRoute: AdminBooksImportExportRoute,
@@ -1878,6 +2113,9 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminOrdersProcessingRoute: AdminOrdersProcessingRoute,
   AdminOrdersRefundsRoute: AdminOrdersRefundsRoute,
   AdminOrdersReturnsRoute: AdminOrdersReturnsRoute,
+  AdminReportsInventoryRoute: AdminReportsInventoryRoute,
+  AdminReportsRevenueRoute: AdminReportsRevenueRoute,
+  AdminReportsSalesRoute: AdminReportsSalesRoute,
   AdminSchoolsClassesRoute: AdminSchoolsClassesRoute,
   AdminSettingsBackupRoute: AdminSettingsBackupRoute,
   AdminSettingsCompanyRoute: AdminSettingsCompanyRoute,
@@ -1905,6 +2143,11 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminShippingShipmentsRoute: AdminShippingShipmentsRoute,
   AdminShippingTrackingRoute: AdminShippingTrackingRoute,
   AdminShippingZonesRoute: AdminShippingZonesRoute,
+  AdminUsersDesignationPermissionsRoute: AdminUsersDesignationPermissionsRoute,
+  AdminUsersDesignationsRoute: AdminUsersDesignationsRoute,
+  AdminUsersMenusRoute: AdminUsersMenusRoute,
+  AdminUsersStaffRoute: AdminUsersStaffRoute,
+  AdminUsersStaffPermissionsRoute: AdminUsersStaffPermissionsRoute,
   AdminBooksIndexRoute: AdminBooksIndexRoute,
   AdminBunchIndexRoute: AdminBunchIndexRoute,
   AdminCustomersIndexRoute: AdminCustomersIndexRoute,

@@ -1,5 +1,19 @@
 import { useState, type ReactNode } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, Plus, Search, Settings2, X } from "lucide-react";
+import { toast } from "sonner";
+
+export type ConfigServiceType = {
+  getPaymentConfig?: () => Promise<any>;
+  updatePaymentConfig?: (data: any) => Promise<any>;
+  getCourierConfig?: () => Promise<any>;
+  updateCourierConfig?: (data: any) => Promise<any>;
+  getEmailConfig?: () => Promise<any>;
+  updateEmailConfig?: (data: any) => Promise<any>;
+  sendTestEmail?: (email: string) => Promise<any>;
+  getSmsConfig?: () => Promise<any>;
+  updateSmsConfig?: (data: any) => Promise<any>;
+};
 
 export type Provider = {
   id: string;
@@ -26,18 +40,27 @@ export function IntegrationsPage({
   group,
   title,
   description,
-  providers,
+  providers: initialProviders,
   extras,
+  isLoading = false,
+  configEndpoint,
+  configService,
 }: {
   group: string;
   title: string;
   description: string;
   providers: Provider[];
   extras?: ReactNode;
+  isLoading?: boolean;
+  configEndpoint?: string;
+  configService?: ConfigServiceType;
 }) {
+  const [providers, setProviders] = useState(initialProviders);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "connected" | "available">("all");
   const [editing, setEditing] = useState<Provider | null>(null);
+  const [formData, setFormData] = useState<Record<string, string>>({});
+  const queryClient = useQueryClient();
 
   const filtered = providers.filter((p) => {
     if (filter === "connected" && p.status !== "connected") return false;
@@ -131,7 +154,12 @@ export function IntegrationsPage({
       {extras}
 
       {editing && (
-        <ConfigureSheet provider={editing} onClose={() => setEditing(null)} />
+        <ConfigureSheet 
+          provider={editing} 
+          onClose={() => setEditing(null)} 
+          configEndpoint={configEndpoint}
+          configService={configService}
+        />
       )}
     </div>
   );
@@ -153,8 +181,71 @@ function StatusPill({ status }: { status: Provider["status"] }) {
   return <span className="rounded-full bg-[#F3F4F6] px-2 py-0.5 text-[10px] font-medium text-[#4B5563]">Available</span>;
 }
 
-function ConfigureSheet({ provider, onClose }: { provider: Provider; onClose: () => void }) {
-  const [mode, setMode] = useState<"test" | "live">(provider.status === "connected" ? "live" : "test");
+function ConfigureSheet({ provider, onClose, configEndpoint, configService }: { provider: Provider; onClose: () => void; configEndpoint?: string; configService?: ConfigServiceType }) {
+  const [mode, setMode] = useState<"test" | "live">("test");
+  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const queryClient = useQueryClient();
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: any) => {
+      if (configEndpoint === "payment-gateway" && configService?.updatePaymentConfig) {
+        return configService.updatePaymentConfig(data);
+      }
+      if (configEndpoint === "courier-gateway" && configService?.updateCourierConfig) {
+        return configService.updateCourierConfig(data);
+      }
+      if (configEndpoint === "email" && configService?.updateEmailConfig) {
+        return configService.updateEmailConfig(data);
+      }
+      if (configEndpoint === "sms-gateway" && configService?.updateSmsConfig) {
+        return configService.updateSmsConfig(data);
+      }
+      throw new Error("No update function available");
+    },
+    onSuccess: () => {
+      toast.success("Configuration saved successfully");
+      queryClient.invalidateQueries({ queryKey: [configEndpoint] });
+      onClose();
+    },
+    onError: () => {
+      toast.error("Failed to save configuration");
+    },
+  });
+
+  const testMutation = useMutation({
+    mutationFn: async () => {
+      if (configEndpoint === "email" && configService?.sendTestEmail && formData.testEmail) {
+        return configService.sendTestEmail(formData.testEmail);
+      }
+      throw new Error("Test not available");
+    },
+    onSuccess: () => {
+      toast.success("Test email sent successfully");
+    },
+    onError: () => {
+      toast.error("Failed to send test email");
+    },
+  });
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await updateMutation.mutateAsync(formData);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTest = async () => {
+    setTesting(true);
+    try {
+      await testMutation.mutateAsync();
+    } finally {
+      setTesting(false);
+    }
+  };
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-black/30" onClick={onClose}>
       <div className="flex h-full w-full max-w-lg flex-col bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
@@ -184,20 +275,36 @@ function ConfigureSheet({ provider, onClose }: { provider: Provider; onClose: ()
               <div key={f.name} className={f.full || f.type === "textarea" ? "col-span-2" : ""}>
                 <label className="text-[11px] font-medium text-[#374151]">{f.label}</label>
                 {f.type === "textarea" ? (
-                  <textarea rows={3} placeholder={f.placeholder} className="mt-1 w-full rounded-md border border-[#E5E7EB] bg-white p-2 font-mono text-[11px] outline-none focus:border-[#4F46E5]" />
+                  <textarea 
+                    rows={3} 
+                    placeholder={f.placeholder}
+                    value={formData[f.name] || ""}
+                    onChange={(e) => setFormData({ ...formData, [f.name]: e.target.value })} 
+                    className="mt-1 w-full rounded-md border border-[#E5E7EB] bg-white p-2 font-mono text-[11px] outline-none focus:border-[#4F46E5]" 
+                  />
                 ) : f.type === "select" ? (
-                  <select className="mt-1 h-8 w-full rounded-md border border-[#E5E7EB] bg-white px-2 text-[12px] outline-none focus:border-[#4F46E5]">
+                  <select 
+                    className="mt-1 h-8 w-full rounded-md border border-[#E5E7EB] bg-white px-2 text-[12px] outline-none focus:border-[#4F46E5]"
+                    value={formData[f.name] || ""}
+                    onChange={(e) => setFormData({ ...formData, [f.name]: e.target.value })}
+                  >
                     {f.options?.map((o) => <option key={o}>{o}</option>)}
                   </select>
                 ) : f.type === "toggle" ? (
                   <div className="mt-1 flex h-8 items-center gap-2">
-                    <input type="checkbox" defaultChecked />
+                    <input 
+                      type="checkbox" 
+                      checked={formData[f.name] === "true" || formData[f.name] === undefined}
+                      onChange={(e) => setFormData({ ...formData, [f.name]: String(e.target.checked) })}
+                    />
                     <span className="text-[12px] text-[#6B7280]">Enabled</span>
                   </div>
                 ) : (
                   <input
                     type={f.type === "password" ? "password" : "text"}
                     placeholder={f.placeholder}
+                    value={formData[f.name] || ""}
+                    onChange={(e) => setFormData({ ...formData, [f.name]: e.target.value })}
                     className="mt-1 h-8 w-full rounded-md border border-[#E5E7EB] bg-white px-2 font-mono text-[11px] outline-none focus:border-[#4F46E5]"
                   />
                 )}
@@ -218,7 +325,13 @@ function ConfigureSheet({ provider, onClose }: { provider: Provider; onClose: ()
           <div className="flex items-center gap-2">
             <button onClick={onClose} className="h-8 rounded-md border border-[#E5E7EB] bg-white px-3 text-[12px] font-medium">Cancel</button>
             <button className="h-8 rounded-md border border-[#E5E7EB] bg-white px-3 text-[12px] font-medium">Test connection</button>
-            <button className="h-8 rounded-md bg-[#111827] px-3 text-[12px] font-medium text-white">Save</button>
+            <button 
+              onClick={handleSave} 
+              disabled={saving}
+              className="h-8 rounded-md bg-[#111827] px-3 text-[12px] font-medium text-white disabled:opacity-50"
+            >
+              {saving ? "Saving..." : "Save"}
+            </button>
           </div>
         </div>
       </div>

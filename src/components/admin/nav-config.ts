@@ -162,15 +162,7 @@ export const NAV: NavGroup[] = [
       { label: "Login History", to: "/users/login-history" },
     ],
   },
-  {
-    label: "Security", icon: Lock,
-    items: [
-    
-      { label: "RBAC", to: "/security/rbac" },
-    
-
-    ],
-  },
+  
   {
     label: "Integrations", icon: Plug,
     items: [
@@ -202,10 +194,6 @@ export const NAV: NavGroup[] = [
       { label: "Store", to: "/settings/store" },
       { label: "Company", to: "/settings/company" },
       { label: "GST", to: "/settings/gst" },
-      { label: "Payments", to: "/settings/payments" },
-      { label: "Shipping", to: "/settings/shipping" },
-      { label: "Email", to: "/settings/email" },
-      { label: "SMS", to: "/settings/sms" },
       { label: "Notifications", to: "/settings/notifications" },
       { label: "Currency", to: "/settings/currency" },
       { label: "Theme", to: "/settings/theme" },

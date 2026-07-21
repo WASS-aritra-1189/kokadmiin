@@ -50,15 +50,18 @@ function StaffPermissionsPage() {
       setLoading(true);
       try {
         const res = await accountPermissionService.getByAccount(selectedStaff.accountId);
-        // Backend returns { accountId, menus: [{ menu, permissions: [{ id, name, status }] }] }
+        // Backend returns { accountId, menus: [{ menu, permissions: [{ id, permissionId, name, status }] }] }
         const menuData = res?.menus ?? res?.data?.menus ?? [];
         
-        // Build permissions map from response
-        const permsMap = new Map<string, Map<string, { id: string; status: boolean }>>();
+        console.log("API Response menuData:", JSON.stringify(menuData, null, 2));
+        
+        // Build permissions map from response - MUST include permissionId!
+        const permsMap = new Map<string, Map<string, { id: string; permissionId: string; status: boolean }>>();
         for (const m of menuData) {
-          const permMap = new Map<string, { id: string; status: boolean }>();
+          const permMap = new Map<string, { id: string; permissionId: string; status: boolean }>();
           for (const p of m.permissions ?? []) {
-            permMap.set(p.name, { id: p.id, status: p.status });
+            console.log("Permission from API:", JSON.stringify(p));
+            permMap.set(p.name, { id: p.id, permissionId: p.permissionId, status: p.status });
           }
           permsMap.set(m.menu, permMap);
         }
@@ -70,8 +73,10 @@ function StaffPermissionsPage() {
             menu: m.name,
             permissions: permissionTypes.map(pt => {
               const existing = permsMap.get(m.name)?.get(pt);
+              console.log("Existing for", m.name, pt, ":", existing);
               return {
                 id: existing?.id || "",
+                permissionId: existing?.permissionId || "",
                 name: pt,
                 status: existing?.status ?? false,
               };
@@ -132,19 +137,34 @@ function StaffPermissionsPage() {
 
     try {
       // Only include enabled permissions with valid UUIDs
+      console.log("permissions state before save:", JSON.stringify(permissions, null, 2));
+      
       const permList = permissions
         .flatMap(menuItem => 
           menuItem.permissions
             .filter(p => p.status && p.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(p.id))
-            .map(p => ({
-              menuId: menus.find(m => m.name === menuItem.menu)?.id,
-              permissionId: p.id,
-              status: p.status,
-            }))
+            .map(p => {
+              console.log("Processing permission:", JSON.stringify(p));
+              return {
+                menuId: menus.find(m => m.name === menuItem.menu)?.id,
+                permissionId: p.permissionId || p.id,
+                status: p.status,
+              };
+            })
         )
-        .filter(p => p.menuId);
+        .filter(p => p.menuId && p.permissionId);
 
-      await accountPermissionService.update(permList);
+      console.log("Final permList:", JSON.stringify(permList, null, 2));
+
+      // Add accountId to each permission
+      const permListWithAccount = permList.map(p => ({
+        ...p,
+        accountId: selectedStaff.accountId,
+      }));
+      
+      console.log("Final permList with accountId:", JSON.stringify(permListWithAccount, null, 2));
+
+      await accountPermissionService.update(permListWithAccount);
       setSuccess("Permissions saved successfully!");
     } catch (err: any) {
       console.error(err);

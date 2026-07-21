@@ -5,7 +5,7 @@ const wrap = (r: any) => r.data?.data ?? r.data;
 // Types for menu-item permissions
 export type MenuItem = {
   menu: string;
-  permissions: { id: string; name: string; status: boolean }[];
+  permissions: { id: string; permissionId?: string; name: string; status: boolean }[];
 };
 
 // Types for designation permissions

@@ -1,25 +1,43 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell, Pie, PieChart } from "recharts";
 import { ArrowDownRight, ArrowUpRight, Package, ShoppingBag, Wallet, AlertTriangle } from "lucide-react";
-import { books, currency, kpi, orders, revenueSeries } from "@/mock/data";
+import { dashboardService } from "@/services/dashboard.service";
+import { useState } from "react";
+
+function currency(v: number) { return new Intl.NumberFormat("en-IN", { style: "currency", currency: "IND" }).format(v); }
 
 export const Route = createFileRoute("/_admin/dashboard/")({
   component: DashboardPage,
 });
 
 const statusColors: Record<string, string> = {
+  PENDING: "#F59E0B", CONFIRMED: "#8B5CF6", PROCESSING: "#0EA5E9", PACKED: "#6366F1",
+  SHIPPED: "#0EA5E9", DELIVERED: "#10B981", CANCELLED: "#6B7280", REFUNDED: "#EF4444",
+  RETURN_REQUESTED: "#F97316", RETURN_APPROVED: "#F59E0B", RETURNED: "#EF4444",
+  EXCHANGE_REQUESTED: "#8B5CF6", EXCHANGE_APPROVED: "#8B5CF6", EXCHANGED: "#10B981",
   New: "#4F46E5", Processing: "#F59E0B", Packed: "#8B5CF6",
   Shipped: "#0EA5E9", Delivered: "#10B981", Returned: "#EF4444", Cancelled: "#6B7280",
 };
 
 function DashboardPage() {
-  const donutData = Object.entries(
-    orders.reduce<Record<string, number>>((acc, o) => ((acc[o.status] = (acc[o.status] ?? 0) + 1), acc), {}),
-  ).map(([name, value]) => ({ name, value }));
+  const [filter, setFilter] = useState("today");
+  const { data, isLoading } = useQuery({
+    queryKey: ["dashboard-overview", filter],
+    queryFn: () => dashboardService.getOverview({ filter }),
+  });
 
-  const topBooks = [...books].sort((a, b) => b.price * (100 - b.stock) - a.price * (100 - a.stock)).slice(0, 6);
-  const recent = orders.slice(0, 6);
-  const low = books.filter((b) => b.stock <= 10).slice(0, 5);
+  const revenueSeries = data?.revenueGraph?.labels?.map((label: string, i: number) => ({
+    d: label,
+    v: data?.revenueGraph?.datasets?.[0]?.data?.[i] || 0,
+  })) || [];
+
+  const donutData = data?.orderByStatus?.map((s: any) => ({ name: s.status, value: s.count })) || [];
+
+  const topBooks = data?.topSellingBooks?.slice(0, 6) || [];
+  const recent = data?.recentOrders?.slice(0, 6) || [];
+
+  if (isLoading) return <div className="p-6">Loading...</div>;
 
   return (
     <div className="p-6">
@@ -30,17 +48,25 @@ function DashboardPage() {
           <p className="mt-1 text-[13px] text-[#6B7280]">Real-time performance across your bookstore.</p>
         </div>
         <div className="flex items-center gap-2 text-[12px]">
-          <select className="h-8 rounded-md border border-[#E5E7EB] bg-white px-2 text-[12px]"><option>Last 14 days</option><option>Last 30 days</option><option>This quarter</option></select>
+          <select 
+            className="h-8 rounded-md border border-[#E5E7EB] bg-white px-2 text-[12px]"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+          >
+            <option value="today">Today</option>
+            <option value="last_week">This Week</option>
+            <option value="this_month">This Month</option>
+          </select>
           <button className="h-8 rounded-md border border-[#E5E7EB] bg-white px-3 font-medium text-[#374151] hover:bg-[#F9FAFB]">Export</button>
           <button className="h-8 rounded-md bg-[#111827] px-3 font-medium text-white hover:bg-[#1F2937]">Create order</button>
         </div>
       </div>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Kpi label="Gross revenue" value={currency(kpi.revenue)} delta={kpi.revenueDelta} icon={Wallet} tint="#4F46E5" />
-        <Kpi label="Orders" value={kpi.orders.toLocaleString("en-IN")} delta={kpi.ordersDelta} icon={ShoppingBag} tint="#0EA5E9" />
-        <Kpi label="Avg. order value" value={currency(kpi.aov)} delta={kpi.aovDelta} icon={Package} tint="#10B981" />
-        <Kpi label="Low-stock SKUs" value={String(kpi.lowStock)} delta={kpi.lowStockDelta} icon={AlertTriangle} tint="#F59E0B" invertDelta />
+        <Kpi label="Total Revenue" value={currency(data?.totalRevenue || 0)} icon={Wallet} tint="#4F46E5" />
+        <Kpi label="Orders" value={String(data?.totalOrders || 0)} icon={ShoppingBag} tint="#0EA5E9" />
+        <Kpi label="Avg. order value" value={currency(data?.averageOrderValue || 0)} icon={Package} tint="#10B981" />
+        <Kpi label="Stock" value={String(data?.totalStock || 0)} icon={AlertTriangle} tint="#F59E0B" />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
@@ -66,7 +92,7 @@ function DashboardPage() {
         </Card>
 
         <Card>
-          <CardHeader title="Orders by status" subtitle={`${orders.length} orders`} />
+          <CardHeader title="Orders by status" subtitle={`${data?.totalOrders || 0} orders`} />
           <div className="grid grid-cols-2 items-center gap-2 p-4">
             <div className="h-40">
               <ResponsiveContainer>
@@ -99,20 +125,17 @@ function DashboardPage() {
               <tr className="border-b border-[#E5E7EB]"><th className="px-4 py-2 text-left">Book</th><th className="px-4 py-2 text-left">Category</th><th className="px-4 py-2 text-right">Price</th><th className="px-4 py-2 text-right">Stock</th></tr>
             </thead>
             <tbody>
-              {topBooks.map((b) => (
-                <tr key={b.id} className="border-b border-[#F3F4F6] last:border-0 hover:bg-[#FAFAF9]">
+              {topBooks.map((b: any) => (
+                <tr key={b.bookId} className="border-b border-[#F3F4F6] last:border-0 hover:bg-[#FAFAF9]">
                   <td className="px-4 py-2">
                     <div className="flex items-center gap-2.5">
-                      <div className="h-8 w-6 rounded-sm shadow-sm" style={{ background: b.cover }} />
+                      <div className="h-8 w-6 rounded-sm bg-gray-200" />
                       <div>
                         <div className="font-medium text-[#111827]">{b.title}</div>
-                        <div className="text-[10px] text-[#6B7280]">{b.author}</div>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-2 text-[#4B5563]">{b.category}</td>
-                  <td className="px-4 py-2 text-right font-medium tabular-nums">{currency(b.price)}</td>
-                  <td className="px-4 py-2 text-right tabular-nums text-[#4B5563]">{b.stock}</td>
+                  <td className="px-4 py-2 text-right font-medium tabular-nums">{b.totalSold} sold</td>
                 </tr>
               ))}
             </tbody>
@@ -120,18 +143,24 @@ function DashboardPage() {
         </Card>
 
         <Card>
-          <CardHeader title="Low-stock alerts" subtitle={`${low.length} items`} />
-          <div className="divide-y divide-[#F3F4F6]">
-            {low.map((b) => (
-              <div key={b.id} className="flex items-center gap-3 px-4 py-2.5">
-                <div className="h-9 w-7 flex-shrink-0 rounded-sm" style={{ background: b.cover }} />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate text-[12px] font-medium">{b.title}</div>
-                  <div className="text-[10px] text-[#6B7280]">{b.isbn}</div>
-                </div>
-                <div className={"tabular-nums text-[12px] font-semibold " + (b.stock === 0 ? "text-[#EF4444]" : "text-[#F59E0B]")}>{b.stock}</div>
-              </div>
-            ))}
+          <CardHeader title="Stock Info" subtitle={`${data?.totalBooks || 0} books`} />
+          <div className="divide-y divide-[#F3F4F6] px-4 py-3">
+            <div className="flex items-center justify-between py-2">
+              <span className="text-[12px] text-[#6B7280]">Total Books</span>
+              <span className="text-[12px] font-semibold">{data?.totalBooks || 0}</span>
+            </div>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-[12px] text-[#6B7280]">Total Stock</span>
+              <span className="text-[12px] font-semibold">{data?.totalStock || 0}</span>
+            </div>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-[12px] text-[#6B7280]">Bunches</span>
+              <span className="text-[12px] font-semibold">{data?.totalBunch || 0}</span>
+            </div>
+            <div className="flex items-center justify-between py-2">
+              <span className="text-[12px] text-[#6B7280]">Bunch Orders</span>
+              <span className="text-[12px] font-semibold">{data?.totalBunchOrders || 0}</span>
+            </div>
           </div>
         </Card>
       </div>
@@ -151,14 +180,14 @@ function DashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {recent.map((o) => (
+              {recent.map((o: any) => (
                 <tr key={o.id} className="border-b border-[#F3F4F6] last:border-0 hover:bg-[#FAFAF9]">
-                  <td className="px-4 py-2 font-mono text-[11px] text-[#4F46E5]">{o.id}</td>
-                  <td className="px-4 py-2"><div className="font-medium">{o.customer}</div><div className="text-[10px] text-[#6B7280]">{o.email}</div></td>
-                  <td className="px-4 py-2 text-[#4B5563]">{o.payment}</td>
+                  <td className="px-4 py-2 font-mono text-[11px] text-[#4F46E5]">{o.orderNumber}</td>
+                  <td className="px-4 py-2"><div className="font-medium">{o.customer?.name}</div><div className="text-[10px] text-[#6B7280]">{o.customer?.email}</div></td>
+                  <td className="px-4 py-2 text-[#4B5563]">{o.paymentMethod}</td>
                   <td className="px-4 py-2"><StatusPill status={o.status} /></td>
-                  <td className="px-4 py-2 text-right tabular-nums">{o.items}</td>
-                  <td className="px-4 py-2 text-right font-medium tabular-nums">{currency(o.total)}</td>
+                  <td className="px-4 py-2 text-right tabular-nums">-</td>
+                  <td className="px-4 py-2 text-right font-medium tabular-nums">{currency(o.paidAmount)}</td>
                 </tr>
               ))}
             </tbody>
@@ -169,8 +198,7 @@ function DashboardPage() {
   );
 }
 
-function Kpi({ label, value, delta, icon: Icon, tint, invertDelta }: { label: string; value: string; delta: number; icon: any; tint: string; invertDelta?: boolean }) {
-  const positive = invertDelta ? delta < 0 : delta > 0;
+function Kpi({ label, value, icon: Icon, tint }: { label: string; value: string; icon: any; tint: string }) {
   return (
     <div className="rounded-lg border border-[#E5E7EB] bg-white p-4">
       <div className="flex items-start justify-between">
@@ -178,7 +206,6 @@ function Kpi({ label, value, delta, icon: Icon, tint, invertDelta }: { label: st
         <div className="rounded-md p-1.5" style={{ background: tint + "15", color: tint }}><Icon className="h-3.5 w-3.5" /></div>
       </div>
       <div className="mt-2 text-[22px] font-semibold tracking-tight tabular-nums">{value}</div>
-      <div className={"mt-1 flex items-center gap-1 text-[11px] font-medium " + (positive ? "text-[#10B981]" : "text-[#EF4444]")}>{positive ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}{Math.abs(delta)}%<span className="font-normal text-[#9CA3AF]">vs last period</span></div>
     </div>
   );
 }

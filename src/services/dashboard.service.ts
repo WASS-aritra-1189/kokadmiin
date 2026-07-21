@@ -10,6 +10,10 @@ const wrap = (r: any) => {
 };
 
 export const dashboardService = {
+  // Dashboard Overview API (all-in-one)
+  getOverview: (params?: { filter?: string; startDate?: string; endDate?: string }) =>
+    api.get("/dashboard/overview", { params }).then(wrap),
+
   // Sales Overview API
   getSalesOverview: (params?: { filter?: string; startDate?: string; endDate?: string }) => 
     api.get("/dashboard/sales-overview", { params }).then(wrap),

@@ -84,6 +84,7 @@ export const booksService = {
   getById: (id: string) => api.get(`/books/${id}`).then(wrap),
   create: (data: CreateBookPayload) => api.post("/books", data).then(wrap),
   update: (id: string, data: Partial<CreateBookPayload>) => api.patch(`/books/${id}`, data).then(wrap),
+  updateStatus: (id: string, status: string) => api.patch(`/books/status/${id}`, { status }).then(wrap),
   uploadCover: (id: string, file: File) => {
     const fd = new FormData(); fd.append("file", file);
     return api.put(`/books/cover/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } }).then(wrap);

@@ -1,7 +1,7 @@
 import { api } from "@/lib/axios";
 import type { Provider } from "@/components/admin/IntegrationsPage";
 
-const wrap = <T,>(r: any): T => r.data?.data ?? r.data;
+const wrap = <T,>(r: any): T => r.data?.data?.data ?? r.data?.data ?? r.data;
 
 export interface PaymentGatewayConfig {
   id: string;
@@ -17,6 +17,7 @@ export interface CourierGatewayConfig {
   id: string;
   provider: string;
   email: string;
+  password?: string;
   channelId: string;
   pickupLocation: string;
   warehousePincode: string;
@@ -89,41 +90,26 @@ export const mapPaymentConfigToProvider = (config: PaymentGatewayConfig | null):
     ];
   }
 
-  const providerConfigs: Record<string, Provider> = {
-    razorpay: {
-      id: "razorpay", name: "Razorpay", tagline: "UPI, cards, netbanking, wallets for Indian merchants.",
-      logo: "RZ", color: "#0C2451", status: "connected",
-      fields: [
-        { name: "keyId", label: "Key ID" },
-        { name: "keySecret", label: "Key secret", type: "password" },
-        { name: "webhookSecret", label: "Webhook secret", type: "password", full: true },
-        { name: "currency", label: "Currency" },
-      ],
-      meta: [
-        { label: "Key ID", value: config.keyId || "N/A" },
-        { label: "Currency", value: config.currency || "INR" },
-        { label: "Status", value: config.status || "ACTIVE" },
-      ],
-    },
-    stripe: {
-      id: "stripe", name: "Stripe", tagline: "International cards, Apple/Google Pay, subscriptions.",
-      logo: "ST", color: "#635BFF", status: "connected",
-      fields: [
-        { name: "publishableKey", label: "Publishable key" },
-        { name: "secretKey", label: "Secret key", type: "password" },
-      ],
-    },
-    payu: {
-      id: "payu", name: "PayU", tagline: "Popular Indian gateway with EMI and BNPL options.",
-      logo: "PU", color: "#00B67F", status: "connected",
-      fields: [
-        { name: "merchantKey", label: "Merchant key" },
-        { name: "merchantSalt", label: "Merchant salt", type: "password" },
-      ],
-    },
-  };
-
-  return [providerConfigs[config.provider] || providerConfigs.razorpay];
+  return [{
+    id: "razorpay",
+    name: "Razorpay",
+    tagline: "UPI, cards, netbanking, wallets for Indian merchants.",
+    logo: "RZ",
+    color: "#0C2451",
+    status: "connected",
+    data: config,
+    fields: [
+      { name: "keyId", label: "Key ID" },
+      { name: "keySecret", label: "Key secret", type: "password" },
+      { name: "webhookSecret", label: "Webhook secret", type: "password", full: true },
+      { name: "currency", label: "Currency" },
+    ],
+    meta: [
+      { label: "Key ID", value: config.keyId || "N/A" },
+      { label: "Currency", value: config.currency || "INR" },
+      { label: "Status", value: config.status || "ACTIVE" },
+    ],
+  }];
 };
 
 // Courier Gateway - Show only configured provider
@@ -135,38 +121,42 @@ export const mapCourierConfigToProvider = (config: CourierGatewayConfig | null):
         { name: "password", label: "Password", type: "password" },
         { name: "channelId", label: "Channel ID" },
         { name: "pickupLocation", label: "Default pickup location" },
+        { name: "warehousePincode", label: "Warehouse Pincode" },
+        { name: "warehouseState", label: "Warehouse State" },
+        { name: "warehousePhone", label: "Warehouse Phone" },
+        { name: "autoPickup", label: "Auto Pickup", type: "toggle", help: "Automatically assign courier after order placement" },
       ]},
     ];
   }
 
-  const providerConfigs: Record<string, Provider> = {
-    shiprocket: {
-      id: "shiprocket", name: "Shiprocket", tagline: "Multi-courier aggregator with the biggest domestic network.",
-      logo: "SR", color: "#7A1CFF", status: "connected",
-      fields: [
-        { name: "email", label: "Account email" },
-        { name: "password", label: "Password", type: "password" },
-        { name: "channelId", label: "Channel ID" },
-        { name: "pickupLocation", label: "Default pickup location" },
-      ],
-      meta: [
-        { label: "Email", value: config.email || "N/A" },
-        { label: "Channel ID", value: config.channelId || "N/A" },
-        { label: "Pickup Location", value: config.pickupLocation || "N/A" },
-        { label: "Pincode", value: config.warehousePincode || "N/A" },
-      ],
-    },
-    delhivery: {
-      id: "delhivery", name: "Delhivery", tagline: "Direct API for surface, express and heavy shipments.",
-      logo: "DL", color: "#E4002B", status: "connected",
-      fields: [
-        { name: "apiToken", label: "API token", type: "password" },
-        { name: "clientName", label: "Client name" },
-      ],
-    },
-  };
-
-  return [providerConfigs[config.provider] || providerConfigs.shiprocket];
+  return [{
+    id: "shiprocket",
+    name: "Shiprocket",
+    tagline: "Multi-courier aggregator with the biggest domestic network.",
+    logo: "SR",
+    color: "#7A1CFF",
+    status: "connected",
+    data: config, // Pass original config data
+    fields: [
+      { name: "email", label: "Account email" },
+      { name: "password", label: "Password", type: "password" },
+      { name: "channelId", label: "Channel ID" },
+      { name: "pickupLocation", label: "Default pickup location" },
+      { name: "warehousePincode", label: "Warehouse Pincode" },
+      { name: "warehouseState", label: "Warehouse State" },
+      { name: "warehousePhone", label: "Warehouse Phone" },
+      { name: "autoPickup", label: "Auto Pickup", type: "toggle", help: "Automatically assign courier after order placement" },
+    ],
+    meta: [
+      { label: "Email", value: config.email || "N/A" },
+      { label: "Channel ID", value: config.channelId || "N/A" },
+      { label: "Pickup Location", value: config.pickupLocation || "N/A" },
+      { label: "Pincode", value: config.warehousePincode || "N/A" },
+      { label: "State", value: config.warehouseState || "N/A" },
+      { label: "Phone", value: config.warehousePhone || "N/A" },
+      { label: "Auto Pickup", value: config.autoPickup ? "Enabled" : "Disabled" },
+    ],
+  }];
 };
 
 // Email - Show only configured
@@ -180,13 +170,19 @@ export const mapEmailConfigToProvider = (config: EmailConfig | null): Provider[]
         { name: "smtpPassword", label: "SMTP Password", type: "password" },
         { name: "fromEmail", label: "From Email" },
         { name: "fromName", label: "From Name" },
+        { name: "useSSL", label: "Use SSL", type: "toggle" },
       ]},
     ];
   }
 
   return [{
-    id: "smtp", name: "SMTP Config", tagline: "Transactional email configuration.",
-    logo: "EM", color: "#1A82E2", status: "connected",
+    id: "smtp",
+    name: "SMTP Config",
+    tagline: "Transactional email configuration.",
+    logo: "EM",
+    color: "#1A82E2",
+    status: "connected",
+    data: config,
     fields: [
       { name: "smtpHost", label: "SMTP Host" },
       { name: "smtpPort", label: "SMTP Port" },
@@ -211,6 +207,7 @@ export const mapSmsConfigToProvider = (config: SmsGatewayConfig | null): Provide
     return [
       { id: "sms", name: "SMS Gateway", tagline: "Configure SMS provider for OTPs and notifications.", logo: "MS", color: "#F26522", status: "available", fields: [
         { name: "provider", label: "Provider", type: "select", options: ["exptel", "msg91", "twilio"] },
+        { name: "subDomain", label: "Sub Domain", placeholder: "api.exotel.com" },
         { name: "accountSid", label: "Account SID" },
         { name: "apiKey", label: "API Key", type: "password" },
         { name: "apiToken", label: "API Token", type: "password" },
@@ -220,8 +217,13 @@ export const mapSmsConfigToProvider = (config: SmsGatewayConfig | null): Provide
   }
 
   return [{
-    id: "sms", name: "SMS Gateway", tagline: "SMS provider configuration.",
-    logo: "MS", color: "#F26522", status: "connected",
+    id: "sms",
+    name: "SMS Gateway",
+    tagline: "SMS provider configuration.",
+    logo: "MS",
+    color: "#F26522",
+    status: "connected",
+    data: config,
     fields: [
       { name: "provider", label: "Provider" },
       { name: "subDomain", label: "Sub Domain" },

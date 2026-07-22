@@ -156,6 +156,21 @@ function BooksPage() {
                   <td className="px-3 py-2 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button
+                        onClick={async () => {
+                          const newStatus = b.status === "ACTIVE" ? "DEACTIVE" : "ACTIVE";
+                          if (!confirm(`Change status to ${newStatus}?`)) return;
+                          try {
+                            await booksService.updateStatus(b.id, newStatus);
+                            load();
+                          } catch (err) {
+                            alert("Failed to update status");
+                          }
+                        }}
+                        className="rounded-md border border-[#E5E7EB] px-2 py-1 text-[11px] font-medium text-[#4F46E5] hover:bg-[#EEF2FF]"
+                      >
+                        {b.status === "ACTIVE" ? "Deactivate" : "Activate"}
+                      </button>
+                      <button
                         onClick={() => setSheet({ open: true, book: b })}
                         className="rounded-md border border-[#E5E7EB] px-2 py-1 text-[11px] font-medium text-[#374151] hover:bg-[#F9FAFB]"
                       >

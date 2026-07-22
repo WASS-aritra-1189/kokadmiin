@@ -24,6 +24,7 @@ export type Provider = {
   status: "connected" | "available" | "beta";
   meta?: { label: string; value: string }[];
   fields: FieldSpec[];
+  data?: Record<string, any>; // Original config data for form population
 };
 
 export type FieldSpec = {
@@ -183,17 +184,43 @@ function StatusPill({ status }: { status: Provider["status"] }) {
 
 function ConfigureSheet({ provider, onClose, configEndpoint, configService }: { provider: Provider; onClose: () => void; configEndpoint?: string; configService?: ConfigServiceType }) {
   const [mode, setMode] = useState<"test" | "live">("test");
-  const [formData, setFormData] = useState<Record<string, string>>({});
+  
+  // Build initial formData from provider.data (original config) or empty for available
+  const getInitialFormData = (): Record<string, string> => {
+    const initial: Record<string, string> = {};
+    const data = provider.data;
+    
+    provider.fields.forEach((f) => {
+      // Initialize toggles based on actual config value (default to false if not set)
+      if (f.type === "toggle") {
+        // Try to get boolean from data, or default to false
+        const val = data?.[f.name];
+        initial[f.name] = val === true ? "true" : "false";
+        return;
+      }
+      
+      // Get value from data if available
+      if (data && data[f.name] !== undefined && data[f.name] !== null) {
+        initial[f.name] = String(data[f.name]);
+      }
+    });
+    
+    return initial;
+  };
+  
+  const [formData, setFormData] = useState<Record<string, string>>(getInitialFormData());
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
   const queryClient = useQueryClient();
 
   const updateMutation = useMutation({
     mutationFn: async (data: any) => {
+      console.log("Mutation received data:", JSON.stringify(data));
       if (configEndpoint === "payment-gateway" && configService?.updatePaymentConfig) {
         return configService.updatePaymentConfig(data);
       }
       if (configEndpoint === "courier-gateway" && configService?.updateCourierConfig) {
+        console.log("Calling updateCourierConfig with:", JSON.stringify(data));
         return configService.updateCourierConfig(data);
       }
       if (configEndpoint === "email" && configService?.updateEmailConfig) {
@@ -232,7 +259,21 @@ function ConfigureSheet({ provider, onClose, configEndpoint, configService }: { 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await updateMutation.mutateAsync(formData);
+      // Convert string "true"/"false" to boolean for toggle fields
+      const dataToSend: Record<string, any> = {};
+      provider.fields.forEach((f) => {
+        if (f.type === "toggle") {
+          dataToSend[f.name] = formData[f.name] === "true";
+        } else if (formData[f.name]) {
+          dataToSend[f.name] = formData[f.name];
+        }
+      });
+      
+      console.log("Saving data:", JSON.stringify(dataToSend));
+      console.log("formData state:", JSON.stringify(formData));
+      console.log("provider.fields:", JSON.stringify(provider.fields));
+      
+      await updateMutation.mutateAsync(dataToSend);
     } finally {
       setSaving(false);
     }
@@ -292,12 +333,14 @@ function ConfigureSheet({ provider, onClose, configEndpoint, configService }: { 
                   </select>
                 ) : f.type === "toggle" ? (
                   <div className="mt-1 flex h-8 items-center gap-2">
-                    <input 
-                      type="checkbox" 
-                      checked={formData[f.name] === "true" || formData[f.name] === undefined}
-                      onChange={(e) => setFormData({ ...formData, [f.name]: String(e.target.checked) })}
-                    />
-                    <span className="text-[12px] text-[#6B7280]">Enabled</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, [f.name]: formData[f.name] === "true" ? "false" : "true" })}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-[#4F46E5] focus:ring-offset-2 ${formData[f.name] === "true" ? "bg-[#4F46E5]" : "bg-[#D1D5DB]"}`}
+                    >
+                      <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${formData[f.name] === "true" ? "translate-x-5" : "translate-x-0"}`} />
+                    </button>
+                    <span className="text-[12px] text-[#6B7280]">{formData[f.name] === "true" ? "Enabled" : "Disabled"}</span>
                   </div>
                 ) : (
                   <input

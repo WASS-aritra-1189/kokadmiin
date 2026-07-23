@@ -34,6 +34,7 @@ export interface BookItem {
   price: string;
   discountPrice: string | null;
   coverImage: string | null;
+  insiderImages: string[] | null;
   quantity: number;
   weight: number | null;
   status: string;
@@ -88,6 +89,11 @@ export const booksService = {
   uploadCover: (id: string, file: File) => {
     const fd = new FormData(); fd.append("file", file);
     return api.put(`/books/cover/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } }).then(wrap);
+  },
+  uploadInsiderImages: (id: string, files: File[]) => {
+    const fd = new FormData();
+    files.forEach((file) => fd.append("files", file));
+    return api.put(`/books/insider-images/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } }).then(wrap);
   },
   delete: (id: string) => api.delete(`/books/${id}`).then(wrap),
 };

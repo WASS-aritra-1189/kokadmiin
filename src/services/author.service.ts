@@ -30,5 +30,9 @@ export const authorService = {
   create: (data: AuthorPayload) => api.post("/authors", data).then(wrap),
   update: (id: string, data: Partial<AuthorPayload>) => api.patch(`/authors/${id}`, data).then(wrap),
   changeStatus: (id: string, status: string) => api.patch(`/authors/status/${id}`, { status }).then(wrap),
+  uploadProfileImage: (id: string, file: File) => {
+    const fd = new FormData(); fd.append("file", file);
+    return api.put(`/authors/${id}/profile-image`, fd, { headers: { "Content-Type": "multipart/form-data" } }).then(wrap);
+  },
   delete: (id: string) => api.delete(`/authors/${id}`).then(wrap),
 };

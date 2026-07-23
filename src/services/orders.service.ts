@@ -206,4 +206,8 @@ export const ordersService = {
   // Refunds
   getAllRefunds: () =>
     api.get("/payment/refunds").then(wrap),
+
+  // COD Payment Confirmation
+  confirmCODPayment: (id: string) =>
+    api.post(`/orders/${id}/confirm-cod`).then(wrap),
 };

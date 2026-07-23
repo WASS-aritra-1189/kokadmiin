@@ -4,6 +4,17 @@ import { Download, Plus, Search, Upload, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { fetchBooks, createBook, updateBook, deleteBook, deleteMultipleBooks } from "@/store/slices/booksSlice";
 import { catalogApi, booksService, type BookItem, type CreateBookPayload, type DropdownItem, type BookLanguage, type BookClass, type BookSubject } from "@/services/books.service";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_admin/books/")({
   component: BooksPage,
@@ -26,6 +37,7 @@ function BooksPage() {
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sheet, setSheet] = useState<{ open: boolean; book: BookItem | null }>({ open: false, book: null });
+  const [statusChange, setStatusChange] = useState<{ open: boolean; book: BookItem | null; newStatus: string }>({ open: false, book: null, newStatus: "" });
 
   const load = (p = page, s = statusFilter, search = q) => {
     dispatch(fetchBooks({
@@ -156,15 +168,8 @@ function BooksPage() {
                   <td className="px-3 py-2 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button
-                        onClick={async () => {
-                          const newStatus = b.status === "ACTIVE" ? "DEACTIVE" : "ACTIVE";
-                          if (!confirm(`Change status to ${newStatus}?`)) return;
-                          try {
-                            await booksService.updateStatus(b.id, newStatus);
-                            load();
-                          } catch (err) {
-                            alert("Failed to update status");
-                          }
+                        onClick={() => {
+                          setStatusChange({ open: true, book: b, newStatus: b.status === "ACTIVE" ? "DEACTIVE" : "ACTIVE" });
                         }}
                         className="rounded-md border border-[#E5E7EB] px-2 py-1 text-[11px] font-medium text-[#4F46E5] hover:bg-[#EEF2FF]"
                       >
@@ -213,6 +218,34 @@ function BooksPage() {
           onSaved={() => { setSheet({ open: false, book: null }); load(); }}
         />
       )}
+
+      <AlertDialog open={statusChange.open} onOpenChange={(open) => !open && setStatusChange({ open: false, book: null, newStatus: "" })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change Book Status</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to {statusChange.newStatus.toLowerCase()} "{statusChange.book?.title}"?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!statusChange.book) return;
+                try {
+                  await booksService.updateStatus(statusChange.book.id, statusChange.newStatus);
+                  load();
+                } catch (err) {
+                  console.error("Failed to update status", err);
+                }
+              }}
+              className="bg-[#4F46E5] hover:bg-[#4338CA]"
+            >
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -268,6 +301,12 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
+  // Insider images
+  const [insiderImages, setInsiderImages] = useState<string[]>(book?.insiderImages ?? []);
+  const [insiderFiles, setInsiderFiles] = useState<File[]>([]);
+  const insiderFileRef = useRef<HTMLInputElement>(null);
+  const [uploadingInsider, setUploadingInsider] = useState(false);
+
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -303,6 +342,15 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
     setCoverPreview(URL.createObjectURL(file));
   };
 
+  const handleInsiderFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setInsiderFiles((prev) => [...prev, ...files]);
+  };
+
+  const removeInsiderFile = (index: number) => {
+    setInsiderFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
@@ -333,6 +381,18 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
     const bookId = isEdit ? book.id : result.payload?.data?.id;
     if (coverFile && bookId) {
       try { await booksService.uploadCover(bookId, coverFile); } catch { /* non-fatal */ }
+    }
+
+    // Upload insider images if any (only for existing books)
+    if (insiderFiles.length > 0 && bookId) {
+      setUploadingInsider(true);
+      try {
+        await booksService.uploadInsiderImages(bookId, insiderFiles);
+        setInsiderFiles([]);
+      } catch (err) {
+        console.error("Failed to upload insider images", err);
+      }
+      setUploadingInsider(false);
     }
 
     onSaved();
@@ -448,6 +508,60 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
               </div>
             </Section>
 
+            {/* Insider Images */}
+            <Section title="Insider Images">
+              <div className="col-span-2 space-y-3">
+                <button
+                  type="button"
+                  onClick={() => insiderFileRef.current?.click()}
+                  className="flex h-8 items-center gap-1.5 rounded-md border border-[#E5E7EB] bg-white px-3 text-[12px] font-medium text-[#374151] hover:bg-[#F9FAFB]"
+                >
+                  <Upload className="h-3.5 w-3.5" />Add insider images
+                </button>
+                <input
+                  ref={insiderFileRef}
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  multiple
+                  className="hidden"
+                  onChange={handleInsiderFilesChange}
+                />
+                {insiderFiles.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {insiderFiles.map((file, idx) => (
+                      <div key={`new-${idx}`} className="relative group">
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`insider-${idx}`}
+                          className="h-16 w-16 rounded-md object-cover border border-[#E5E7EB]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeInsiderFile(idx)}
+                          className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#EF4444] text-white opacity-0 group-hover:opacity-100"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {insiderImages.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {insiderImages.map((url, idx) => (
+                      <img
+                        key={`existing-${idx}`}
+                        src={url}
+                        alt={`insider-${idx}`}
+                        className="h-16 w-16 rounded-md object-cover border border-[#E5E7EB]"
+                      />
+                    ))}
+                  </div>
+                )}
+                <p className="text-[10.5px] text-[#9CA3AF]">Select multiple images. They will be uploaded when you save.</p>
+              </div>
+            </Section>
+
           </div>
 
           {/* Footer */}
@@ -455,8 +569,8 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
             <button type="button" onClick={onClose} className="h-8 rounded-md border border-[#E5E7EB] bg-white px-3 text-[12px] font-medium text-[#374151]">
               Cancel
             </button>
-            <button type="submit" disabled={saving} className="h-8 rounded-md bg-[#111827] px-4 text-[12px] font-medium text-white disabled:opacity-60">
-              {saving ? "Saving…" : isEdit ? "Save changes" : "Create book"}
+            <button type="submit" disabled={saving || uploadingInsider} className="h-8 rounded-md bg-[#111827] px-4 text-[12px] font-medium text-white disabled:opacity-60">
+              {saving || uploadingInsider ? "Saving…" : isEdit ? "Save changes" : "Create book"}
             </button>
           </div>
         </form>

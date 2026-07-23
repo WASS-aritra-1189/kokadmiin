@@ -226,6 +226,22 @@ function OrderDrawer({
   const [tracking, setTracking] = useState<any>(null);
   const [trackLoading, setTrackLoading] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [confirmingCOD, setConfirmingCOD] = useState(false);
+
+  const isCODPending = order.paymentMethod === "COD" && order.paymentStatus === "PENDING";
+
+  const handleConfirmCOD = async () => {
+    if (!confirm("Confirm that payment has been received for this COD order?")) return;
+    setConfirmingCOD(true);
+    setMsg(null);
+    try {
+      const res = await ordersService.confirmCODPayment(order.id);
+      setMsg({ text: "COD payment confirmed successfully!", ok: true });
+      onStatusChange(res);
+    } catch (err: any) {
+      setMsg({ text: err.response?.data?.message ?? "Failed to confirm COD payment.", ok: false });
+    } finally { setConfirmingCOD(false); }
+  };
 
   useEffect(() => {
     if (order.awb) void handleTrack();
@@ -390,6 +406,24 @@ function OrderDrawer({
             </section>
 
             {/* Schedule pickup */}
+            {isCODPending && (
+              <section className="rounded-lg border border-[#FEF3C7] bg-[#FFFBEB] p-4">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-[#92400E] mb-3">
+                  <Truck className="inline h-3 w-3 mr-1" />COD Payment Pending
+                </div>
+                <p className="text-[12px] text-[#92400E] mb-3">
+                  This is a Cash on Delivery order. Confirm when payment has been received from the customer.
+                </p>
+                <button
+                  onClick={handleConfirmCOD}
+                  disabled={confirmingCOD}
+                  className="h-8 rounded-md bg-[#F59E0B] px-3 text-[12px] font-medium text-white hover:bg-[#D97706] disabled:opacity-60"
+                >
+                  {confirmingCOD ? "Confirming…" : "Confirm Payment Received"}
+                </button>
+              </section>
+            )}
+
             {order.paymentStatus === "SUCCESS" && order.shipmentId && !["SHIPPED", "DELIVERED", "CANCELLED"].includes(order.status) && (
               <section className="rounded-lg border border-[#E5E7EB] p-4">
                 <div className="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280] mb-3">

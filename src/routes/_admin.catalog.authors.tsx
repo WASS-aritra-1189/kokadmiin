@@ -20,6 +20,8 @@ function Page() {
       updateFn={authorService.update}
       changeStatusFn={authorService.changeStatus}
       deleteFn={authorService.delete}
+      uploadProfileImageFn={authorService.uploadProfileImage}
+      profileImageField="profileImage"
       defaultForm={{ name: "", bio: "", email: "", phone: "", nationality: "", status: "ACTIVE" }}
       columns={[
         {
@@ -27,9 +29,13 @@ function Page() {
           label: "Author",
           render: (r: any) => (
             <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#EEF2FF] to-[#C7D2FE] text-[11px] font-semibold text-[#4F46E5]">
-                {r.name.split(" ").map((n: string) => n[0]).slice(0, 2).join("")}
-              </div>
+              {r.profileImage ? (
+                <img src={r.profileImage} alt={r.name} className="h-8 w-8 flex-shrink-0 rounded-full object-cover" />
+              ) : (
+                <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#EEF2FF] to-[#C7D2FE] text-[11px] font-semibold text-[#4F46E5]">
+                  {r.name.split(" ").map((n: string) => n[0]).slice(0, 2).join("")}
+                </div>
+              )}
               <div>
                 <div className="font-medium">{r.name}</div>
                 <div className="text-[10px] text-[#6B7280]">{r.nationality ?? "—"}</div>

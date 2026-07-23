@@ -58,6 +58,8 @@ import { Route as AdminSchoolsClassesRouteImport } from './routes/_admin.schools
 import { Route as AdminReportsSalesRouteImport } from './routes/_admin.reports.sales'
 import { Route as AdminReportsRevenueRouteImport } from './routes/_admin.reports.revenue'
 import { Route as AdminReportsInventoryRouteImport } from './routes/_admin.reports.inventory'
+import { Route as AdminPaymentsRefundsRouteImport } from './routes/_admin.payments.refunds'
+import { Route as AdminPaymentsCodRouteImport } from './routes/_admin.payments.cod'
 import { Route as AdminOrdersReturnsRouteImport } from './routes/_admin.orders.returns'
 import { Route as AdminOrdersRefundsRouteImport } from './routes/_admin.orders.refunds'
 import { Route as AdminOrdersProcessingRouteImport } from './routes/_admin.orders.processing'
@@ -109,6 +111,7 @@ import { Route as AdminBunchOrdersRouteImport } from './routes/_admin.bunch.orde
 import { Route as AdminBooksImportExportRouteImport } from './routes/_admin.books.import-export'
 import { Route as AdminBooksBulkUploadRouteImport } from './routes/_admin.books.bulk-upload'
 import { Route as AdminBooksBulkUpdateRouteImport } from './routes/_admin.books.bulk-update'
+import { Route as AdminPaymentsTransactionsIndexRouteImport } from './routes/_admin.payments.transactions.index'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -357,6 +360,16 @@ const AdminReportsRevenueRoute = AdminReportsRevenueRouteImport.update({
 const AdminReportsInventoryRoute = AdminReportsInventoryRouteImport.update({
   id: '/reports/inventory',
   path: '/reports/inventory',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPaymentsRefundsRoute = AdminPaymentsRefundsRouteImport.update({
+  id: '/payments/refunds',
+  path: '/payments/refunds',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPaymentsCodRoute = AdminPaymentsCodRouteImport.update({
+  id: '/payments/cod',
+  path: '/payments/cod',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminOrdersReturnsRoute = AdminOrdersReturnsRouteImport.update({
@@ -626,6 +639,12 @@ const AdminBooksBulkUpdateRoute = AdminBooksBulkUpdateRouteImport.update({
   path: '/books/bulk-update',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminPaymentsTransactionsIndexRoute =
+  AdminPaymentsTransactionsIndexRouteImport.update({
+    id: '/payments/transactions/',
+    path: '/payments/transactions/',
+    getParentRoute: () => AdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -683,6 +702,8 @@ export interface FileRoutesByFullPath {
   '/orders/processing': typeof AdminOrdersProcessingRoute
   '/orders/refunds': typeof AdminOrdersRefundsRoute
   '/orders/returns': typeof AdminOrdersReturnsRoute
+  '/payments/cod': typeof AdminPaymentsCodRoute
+  '/payments/refunds': typeof AdminPaymentsRefundsRoute
   '/reports/inventory': typeof AdminReportsInventoryRoute
   '/reports/revenue': typeof AdminReportsRevenueRoute
   '/reports/sales': typeof AdminReportsSalesRoute
@@ -727,6 +748,7 @@ export interface FileRoutesByFullPath {
   '/orders/': typeof AdminOrdersIndexRoute
   '/reports/': typeof AdminReportsIndexRoute
   '/schools/': typeof AdminSchoolsIndexRoute
+  '/payments/transactions/': typeof AdminPaymentsTransactionsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -783,6 +805,8 @@ export interface FileRoutesByTo {
   '/orders/processing': typeof AdminOrdersProcessingRoute
   '/orders/refunds': typeof AdminOrdersRefundsRoute
   '/orders/returns': typeof AdminOrdersReturnsRoute
+  '/payments/cod': typeof AdminPaymentsCodRoute
+  '/payments/refunds': typeof AdminPaymentsRefundsRoute
   '/reports/inventory': typeof AdminReportsInventoryRoute
   '/reports/revenue': typeof AdminReportsRevenueRoute
   '/reports/sales': typeof AdminReportsSalesRoute
@@ -827,6 +851,7 @@ export interface FileRoutesByTo {
   '/orders': typeof AdminOrdersIndexRoute
   '/reports': typeof AdminReportsIndexRoute
   '/schools': typeof AdminSchoolsIndexRoute
+  '/payments/transactions': typeof AdminPaymentsTransactionsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -886,6 +911,8 @@ export interface FileRoutesById {
   '/_admin/orders/processing': typeof AdminOrdersProcessingRoute
   '/_admin/orders/refunds': typeof AdminOrdersRefundsRoute
   '/_admin/orders/returns': typeof AdminOrdersReturnsRoute
+  '/_admin/payments/cod': typeof AdminPaymentsCodRoute
+  '/_admin/payments/refunds': typeof AdminPaymentsRefundsRoute
   '/_admin/reports/inventory': typeof AdminReportsInventoryRoute
   '/_admin/reports/revenue': typeof AdminReportsRevenueRoute
   '/_admin/reports/sales': typeof AdminReportsSalesRoute
@@ -930,6 +957,7 @@ export interface FileRoutesById {
   '/_admin/orders/': typeof AdminOrdersIndexRoute
   '/_admin/reports/': typeof AdminReportsIndexRoute
   '/_admin/schools/': typeof AdminSchoolsIndexRoute
+  '/_admin/payments/transactions/': typeof AdminPaymentsTransactionsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -989,6 +1017,8 @@ export interface FileRouteTypes {
     | '/orders/processing'
     | '/orders/refunds'
     | '/orders/returns'
+    | '/payments/cod'
+    | '/payments/refunds'
     | '/reports/inventory'
     | '/reports/revenue'
     | '/reports/sales'
@@ -1033,6 +1063,7 @@ export interface FileRouteTypes {
     | '/orders/'
     | '/reports/'
     | '/schools/'
+    | '/payments/transactions/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -1089,6 +1120,8 @@ export interface FileRouteTypes {
     | '/orders/processing'
     | '/orders/refunds'
     | '/orders/returns'
+    | '/payments/cod'
+    | '/payments/refunds'
     | '/reports/inventory'
     | '/reports/revenue'
     | '/reports/sales'
@@ -1133,6 +1166,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/reports'
     | '/schools'
+    | '/payments/transactions'
   id:
     | '__root__'
     | '/'
@@ -1191,6 +1225,8 @@ export interface FileRouteTypes {
     | '/_admin/orders/processing'
     | '/_admin/orders/refunds'
     | '/_admin/orders/returns'
+    | '/_admin/payments/cod'
+    | '/_admin/payments/refunds'
     | '/_admin/reports/inventory'
     | '/_admin/reports/revenue'
     | '/_admin/reports/sales'
@@ -1235,6 +1271,7 @@ export interface FileRouteTypes {
     | '/_admin/orders/'
     | '/_admin/reports/'
     | '/_admin/schools/'
+    | '/_admin/payments/transactions/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1588,6 +1625,20 @@ declare module '@tanstack/react-router' {
       path: '/reports/inventory'
       fullPath: '/reports/inventory'
       preLoaderRoute: typeof AdminReportsInventoryRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/payments/refunds': {
+      id: '/_admin/payments/refunds'
+      path: '/payments/refunds'
+      fullPath: '/payments/refunds'
+      preLoaderRoute: typeof AdminPaymentsRefundsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/payments/cod': {
+      id: '/_admin/payments/cod'
+      path: '/payments/cod'
+      fullPath: '/payments/cod'
+      preLoaderRoute: typeof AdminPaymentsCodRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/orders/returns': {
@@ -1947,6 +1998,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBooksBulkUpdateRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/payments/transactions/': {
+      id: '/_admin/payments/transactions/'
+      path: '/payments/transactions'
+      fullPath: '/payments/transactions/'
+      preLoaderRoute: typeof AdminPaymentsTransactionsIndexRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
@@ -2018,6 +2076,8 @@ interface AdminRouteChildren {
   AdminOrdersProcessingRoute: typeof AdminOrdersProcessingRoute
   AdminOrdersRefundsRoute: typeof AdminOrdersRefundsRoute
   AdminOrdersReturnsRoute: typeof AdminOrdersReturnsRoute
+  AdminPaymentsCodRoute: typeof AdminPaymentsCodRoute
+  AdminPaymentsRefundsRoute: typeof AdminPaymentsRefundsRoute
   AdminReportsInventoryRoute: typeof AdminReportsInventoryRoute
   AdminReportsRevenueRoute: typeof AdminReportsRevenueRoute
   AdminReportsSalesRoute: typeof AdminReportsSalesRoute
@@ -2059,6 +2119,7 @@ interface AdminRouteChildren {
   AdminOrdersIndexRoute: typeof AdminOrdersIndexRoute
   AdminReportsIndexRoute: typeof AdminReportsIndexRoute
   AdminSchoolsIndexRoute: typeof AdminSchoolsIndexRoute
+  AdminPaymentsTransactionsIndexRoute: typeof AdminPaymentsTransactionsIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
@@ -2113,6 +2174,8 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminOrdersProcessingRoute: AdminOrdersProcessingRoute,
   AdminOrdersRefundsRoute: AdminOrdersRefundsRoute,
   AdminOrdersReturnsRoute: AdminOrdersReturnsRoute,
+  AdminPaymentsCodRoute: AdminPaymentsCodRoute,
+  AdminPaymentsRefundsRoute: AdminPaymentsRefundsRoute,
   AdminReportsInventoryRoute: AdminReportsInventoryRoute,
   AdminReportsRevenueRoute: AdminReportsRevenueRoute,
   AdminReportsSalesRoute: AdminReportsSalesRoute,
@@ -2154,6 +2217,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminOrdersIndexRoute: AdminOrdersIndexRoute,
   AdminReportsIndexRoute: AdminReportsIndexRoute,
   AdminSchoolsIndexRoute: AdminSchoolsIndexRoute,
+  AdminPaymentsTransactionsIndexRoute: AdminPaymentsTransactionsIndexRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)

@@ -87,7 +87,7 @@ export const NAV: NavGroup[] = [
   {
     label: "Payments", icon: CreditCard,
     items: [
-      { label: "Gateways", to: "/payments/gateways" },
+      
       { label: "Transactions", to: "/payments/transactions" },
       
       { label: "COD", to: "/payments/cod" },

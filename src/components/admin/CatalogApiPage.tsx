@@ -1,5 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { Plus, Search, X } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { Plus, Search, Upload, X } from "lucide-react";
 
 const LIMIT = 10;
 
@@ -33,12 +33,14 @@ interface Props<T extends { id: string; status: string; createdAt: string }> {
   deleteFn: (id: string) => Promise<any>;
   defaultForm: Record<string, any>;
   extraSheetContent?: (form: Record<string, any>, setForm: (f: Record<string, any>) => void) => ReactNode;
+  uploadProfileImageFn?: (id: string, file: File) => Promise<any>;
+  profileImageField?: string;
 }
 
 export function CatalogApiPage<T extends { id: string; status: string; createdAt: string }>({
   title, description, newLabel, columns, sheetFields,
   fetchFn, createFn, updateFn, changeStatusFn, deleteFn,
-  defaultForm, extraSheetContent,
+  defaultForm, extraSheetContent, uploadProfileImageFn, profileImageField,
 }: Props<T>) {
   const [items, setItems] = useState<T[]>([]);
   const [total, setTotal] = useState(0);
@@ -74,9 +76,30 @@ export function CatalogApiPage<T extends { id: string; status: string; createdAt
     load();
   };
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handleUploadProfileImage = async (item: T) => {
+    if (!uploadProfileImageFn || !profileImageField) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      setUploadingImage(true);
+      try {
+        await uploadProfileImageFn((item as any).id, file);
+        load();
+      } finally {
+        setUploadingImage(false);
+      }
+    };
+    input.click();
+  };
+
   return (
     <div className="p-6">
-      <div className="text-[11px] font-medium uppercase tracking-wider text-[#6B7280]">Catalog</div>
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-[22px] font-semibold tracking-tight">{title}</h1>
@@ -197,17 +220,20 @@ export function CatalogApiPage<T extends { id: string; status: string; createdAt
           createFn={createFn}
           updateFn={updateFn}
           extraContent={extraSheetContent}
+          uploadProfileImageFn={uploadProfileImageFn}
+          profileImageField={profileImageField}
           onClose={() => setSheet({ open: false, item: null })}
           onSaved={() => { setSheet({ open: false, item: null }); load(); }}
         />
       )}
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" />
     </div>
   );
 }
 
 // ─── Sheet ────────────────────────────────────────────────────────────────────
 
-function CatalogSheet({ title, item, fields, defaultForm, createFn, updateFn, extraContent, onClose, onSaved }: {
+function CatalogSheet({ title, item, fields, defaultForm, createFn, updateFn, extraContent, uploadProfileImageFn, profileImageField, onClose, onSaved }: {
   title: string;
   item: any | null;
   fields: CatalogSheetField[];
@@ -215,10 +241,23 @@ function CatalogSheet({ title, item, fields, defaultForm, createFn, updateFn, ex
   createFn: (data: any) => Promise<any>;
   updateFn: (id: string, data: any) => Promise<any>;
   extraContent?: (form: Record<string, any>, setForm: (f: Record<string, any>) => void) => ReactNode;
+  uploadProfileImageFn?: (id: string, file: File) => Promise<any>;
+  profileImageField?: string;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const isEdit = !!item;
+  const [profileImage, setProfileImage] = useState<string | null>(item?.[profileImageField || ''] ?? null);
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const profileFileRef = useRef<HTMLInputElement>(null);
+
+  const handleProfileImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setProfileImageFile(file);
+    setProfileImage(URL.createObjectURL(file));
+  };
+
   const [form, setForm] = useState<Record<string, any>>(() => {
     if (!item) return { ...defaultForm };
     const f: Record<string, any> = { ...defaultForm };
@@ -237,6 +276,10 @@ function CatalogSheet({ title, item, fields, defaultForm, createFn, updateFn, ex
     try {
       if (isEdit) {
         await updateFn(item.id, form);
+        // Upload profile image if selected
+        if (profileImageFile && item?.id && uploadProfileImageFn) {
+          await uploadProfileImageFn(item.id, profileImageFile);
+        }
       } else {
         await createFn(form);
       }
@@ -266,6 +309,24 @@ function CatalogSheet({ title, item, fields, defaultForm, createFn, updateFn, ex
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
             {error && (
               <div className="rounded-lg border border-[#FEE2E2] bg-[#FEF2F2] px-3 py-2 text-[12px] text-[#B91C1C]">{error}</div>
+            )}
+
+            {(uploadProfileImageFn && profileImageField) && (
+              <div className="flex items-start gap-4">
+                <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-full border border-[#E5E7EB] bg-[#F9FAFB]">
+                  {profileImage
+                    ? <img src={profileImage} alt="profile" className="h-full w-full object-cover" />
+                    : <div className="flex h-full items-center justify-center text-[10px] text-[#9CA3AF]">No image</div>
+                  }
+                </div>
+                <div>
+                  <button type="button" onClick={() => profileFileRef.current?.click()} className="flex h-8 items-center gap-1.5 rounded-md border border-[#E5E7EB] bg-white px-3 text-[12px] font-medium text-[#374151] hover:bg-[#F9FAFB]">
+                    <Upload className="h-3.5 w-3.5" />{profileImage ? "Change" : "Upload"}
+                  </button>
+                  <p className="mt-1.5 text-[10.5px] text-[#9CA3AF]">JPEG or PNG, max 5 MB.</p>
+                  <input ref={profileFileRef} type="file" accept="image/jpeg,image/png" className="hidden" onChange={handleProfileImageChange} />
+                </div>
+              </div>
             )}
 
             <div className="grid grid-cols-2 gap-3">

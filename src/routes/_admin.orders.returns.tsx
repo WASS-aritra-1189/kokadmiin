@@ -148,10 +148,11 @@ function ReturnsPage() {
                 </table>
 
                 {/* Pickup / shipment info */}
-                {(r.returnAwb || r.returnPickupStatus) && (
-                  <div className="flex gap-4 text-[11px] text-[#6B7280]">
-                    {r.returnAwb && <span>Return AWB: <span className="font-mono text-[#374151]">{r.returnAwb}</span></span>}
-                    {r.returnPickupStatus && <span>Pickup: <span className="text-[#374151]">{r.returnPickupStatus}</span></span>}
+                {(r.returnShipmentId || r.returnAwb || r.returnPickupStatus) && (
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[#6B7280]">
+                    {r.returnShipmentId && <span>Shipment ID: <span className="font-mono text-[#374151]">{r.returnShipmentId}</span></span>}
+                    {r.returnAwb && <span>AWB: <span className="font-mono font-medium text-[#4F46E5]">{r.returnAwb}</span></span>}
+                    {r.returnPickupStatus && <span>Status: <span className="text-[#374151]">{r.returnPickupStatus}</span></span>}
                     {r.pickupScheduledAt && <span>Scheduled: {new Date(r.pickupScheduledAt).toLocaleString("en-IN")}</span>}
                   </div>
                 )}

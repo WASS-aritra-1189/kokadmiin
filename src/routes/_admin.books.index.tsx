@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Download, Plus, Search, Upload, X } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { fetchBooks, createBook, updateBook, deleteBook, deleteMultipleBooks } from "@/store/slices/booksSlice";
-import { catalogApi, booksService, type BookItem, type CreateBookPayload, type DropdownItem, type BookLanguage, type BookClass, type BookSubject } from "@/services/books.service";
+import { catalogApi, booksService, type BookItem, type CreateBookPayload, type DropdownItem, type BookLanguage, type BookClass, type BookSubject, type BookInsiderImage } from "@/services/books.service";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +23,7 @@ export const Route = createFileRoute("/_admin/books/")({
 const LIMIT = 10;
 
 const EMPTY: CreateBookPayload = {
-  title: "", authorId: "", productCategoryId: "", boardId: "", classId: "",
+  title: "", authorId: "", productCategoryId: "", publisherId: "", boardId: "", classId: "",
   subjectId: "", genreId: "", languageId: "", description: "", publisher: "",
   publishedYear: "", pages: undefined, price: undefined, discountPrice: undefined,
   quantity: 0, weight: 0.5, status: "ACTIVE",
@@ -129,16 +129,17 @@ function BooksPage() {
                 <th className="px-3 py-2 text-right">MRP</th>
                 <th className="px-3 py-2 text-right">Price</th>
                 <th className="px-3 py-2 text-right">Stock</th>
+                <th className="px-3 py-2 text-left">Staff Pick</th>
                 <th className="px-3 py-2 text-left">Status</th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={11} className="px-3 py-8 text-center text-[12px] text-[#6B7280]">Loading…</td></tr>
+                <tr><td colSpan={12} className="px-3 py-8 text-center text-[12px] text-[#6B7280]">Loading…</td></tr>
               )}
               {!loading && items.length === 0 && (
-                <tr><td colSpan={11} className="px-3 py-8 text-center text-[12px] text-[#6B7280]">No books found.</td></tr>
+                <tr><td colSpan={12} className="px-3 py-8 text-center text-[12px] text-[#6B7280]">No books found.</td></tr>
               )}
               {!loading && items.map((b) => (
                 <tr key={b.id} className="border-b border-[#F3F4F6] last:border-0 hover:bg-[#FAFAF9]">
@@ -163,6 +164,24 @@ function BooksPage() {
                   <td className="px-3 py-2 text-right font-medium tabular-nums">₹{b.discountPrice ?? b.price}</td>
                   <td className={"px-3 py-2 text-right tabular-nums font-medium " + (b.quantity === 0 ? "text-[#EF4444]" : b.quantity <= 10 ? "text-[#F59E0B]" : "text-[#111827]")}>
                     {b.quantity}
+                  </td>
+                  <td className="px-3 py-2">
+                    <button
+                      onClick={async () => {
+                        try {
+                          await booksService.toggleStaffPick(b.id, !b.isStaffPick);
+                          load();
+                        } catch (err) {
+                          console.error("Failed to toggle staff pick", err);
+                        }
+                      }}
+                      className={"rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors " +
+                        (b.isStaffPick
+                          ? "bg-[#FEF9C3] text-[#854D0E] hover:bg-[#FDE68A]"
+                          : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]")}
+                    >
+                      {b.isStaffPick ? "★ Yes" : "☆ No"}
+                    </button>
                   </td>
                   <td className="px-3 py-2"><StatusChip status={b.status} /></td>
                   <td className="px-3 py-2 text-right">
@@ -269,6 +288,7 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
           title: book.title,
           authorId: book.authorId ?? "",
           productCategoryId: book.productCategoryId ?? "",
+          publisherId: (book as any).publisherId ?? "",
           boardId: book.boardId ?? "",
           classId: book.classId ?? "",
           subjectId: book.subjectId ?? "",
@@ -295,14 +315,15 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
   const [boards, setBoards] = useState<DropdownItem[]>([]);
   const [classes, setClasses] = useState<BookClass[]>([]);
   const [subjects, setSubjects] = useState<BookSubject[]>([]);
+  const [publishers, setPublishers] = useState<DropdownItem[]>([]);
 
   // Cover upload
   const [coverPreview, setCoverPreview] = useState<string | null>(book?.coverImage ?? null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Insider images
-  const [insiderImages, setInsiderImages] = useState<string[]>(book?.insiderImages ?? []);
+  // Insider images - extract URLs from BookInsiderImage objects
+  const [insiderImages, setInsiderImages] = useState<BookInsiderImage[]>(book?.insiderImages ?? []);
   const [insiderFiles, setInsiderFiles] = useState<File[]>([]);
   const insiderFileRef = useRef<HTMLInputElement>(null);
   const [uploadingInsider, setUploadingInsider] = useState(false);
@@ -316,6 +337,7 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
     catalogApi.genres().then((g) => { console.log("[BookSheet] genres:", g); setGenres(g); });
     catalogApi.languages().then((l) => { console.log("[BookSheet] languages:", l); setLanguages(l); });
     catalogApi.boards().then((b) => { console.log("[BookSheet] boards:", b); setBoards(b); });
+    catalogApi.publishers().then((p) => { console.log("[BookSheet] publishers:", p); setPublishers(p); });
   }, []);
 
   // When board changes, load classes
@@ -358,6 +380,7 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
       ...form,
       authorId: form.authorId || undefined,
       productCategoryId: form.productCategoryId || undefined,
+      publisherId: form.publisherId || undefined,
       boardId: form.boardId || undefined,
       classId: form.classId || undefined,
       subjectId: form.subjectId || undefined,
@@ -429,7 +452,7 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
                 <Select value={form.authorId ?? ""} onChange={(v) => set("authorId", v)} options={authors} placeholder="Select author" />
               </Field>
               <Field label="Publisher">
-                <input value={form.publisher ?? ""} onChange={(e) => set("publisher", e.target.value)} className={input()} placeholder="e.g. Penguin" />
+                <Select value={form.publisherId ?? ""} onChange={(v) => set("publisherId", v)} options={publishers} placeholder="Select publisher" />
               </Field>
               <Field label="Published Year">
                 <input value={form.publishedYear ?? ""} onChange={(e) => set("publishedYear", e.target.value)} className={input()} placeholder="e.g. 2024" maxLength={4} />
@@ -548,10 +571,10 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
                 )}
                 {insiderImages.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {insiderImages.map((url, idx) => (
+                    {insiderImages.map((img, idx) => (
                       <img
                         key={`existing-${idx}`}
-                        src={url}
+                        src={img.url}
                         alt={`insider-${idx}`}
                         className="h-16 w-16 rounded-md object-cover border border-[#E5E7EB]"
                       />

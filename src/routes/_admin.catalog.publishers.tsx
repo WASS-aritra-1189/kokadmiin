@@ -1,54 +1,66 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { CatalogPage } from "@/components/admin/CatalogTable";
-import { publishers } from "@/mock/catalog";
+import { CatalogApiPage } from "@/components/admin/CatalogApiPage";
+import { publisherService } from "@/services/publisher.service";
 
 export const Route = createFileRoute("/_admin/catalog/publishers")({ component: Page });
 
+const STATUS_OPTIONS = [
+  { value: "ACTIVE", label: "Active" },
+  { value: "DEACTIVE", label: "Deactive" },
+];
+
+// Wrapper: First upload image, then update publisher logo with the path
+const handleLogoUpload = async (id: string, file: File) => {
+  const path = await publisherService.uploadImage(file);
+  return publisherService.updateLogo(id, path);
+};
+
 function Page() {
   return (
-    <CatalogPage
-      group="Catalog"
+    <CatalogApiPage
       title="Publishers"
       description="Publishing houses whose imprints you carry. Contact, imprints, catalog size and status."
-      rows={publishers}
-      searchKeys={["name", "hq", "contact"]}
       newLabel="New publisher"
-      stats={[
-        { label: "Publishers", value: publishers.length },
-        { label: "Imprints", value: publishers.reduce((s, p) => s + p.imprints, 0) },
-        { label: "Total titles", value: publishers.reduce((s, p) => s + p.titles, 0) },
-        { label: "Active", value: publishers.filter((p) => p.status === "Active").length },
-      ]}
+      fetchFn={publisherService.getAll}
+      createFn={publisherService.create}
+      updateFn={publisherService.update}
+      changeStatusFn={publisherService.changeStatus}
+      deleteFn={publisherService.delete}
+      uploadProfileImageFn={handleLogoUpload}
+      profileImageField="logo"
+      defaultForm={{ name: "", description: "", email: "", phone: "", website: "", address: "", status: "ACTIVE" }}
       columns={[
-        { key: "name", label: "Publisher", render: (r) => (
-          <div>
-            <div className="font-medium">{r.name}</div>
-            <div className="text-[10px] text-[#6B7280]">HQ · {r.hq}</div>
-          </div>
-        ) },
-        { key: "imprints", label: "Imprints", align: "right" },
-        { key: "titles", label: "Titles", align: "right" },
-        { key: "contact", label: "Primary contact", render: (r) => (
-          <div>
-            <div>{r.contact}</div>
-            <div className="text-[10px] text-[#6B7280]">{r.email}</div>
-          </div>
-        ) },
-        { key: "status", label: "Status", render: (r) => (
-          <span className={"rounded-full px-2 py-0.5 text-[10px] font-medium " + (r.status === "Active" ? "bg-[#DCFCE7] text-[#166534]" : "bg-[#FEE2E2] text-[#991B1B]")}>{r.status}</span>
-        ) },
+        {
+          key: "name",
+          label: "Publisher",
+          render: (r: any) => (
+            <div className="flex items-center gap-2">
+              {r.logo ? (
+                <img src={r.logo} alt={r.name} className="h-8 w-8 flex-shrink-0 rounded object-cover" />
+              ) : (
+                <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded bg-gradient-to-br from-[#EEF2FF] to-[#C7D2FE] text-[11px] font-semibold text-[#4F46E5]">
+                  {r.name.split(" ").map((n: string) => n[0]).slice(0, 2).join("")}
+                </div>
+              )}
+              <div>
+                <div className="font-medium">{r.name}</div>
+                <div className="text-[10px] text-[#6B7280]">{r.address ?? "—"}</div>
+              </div>
+            </div>
+          ),
+        },
+        { key: "email", label: "Email", render: (r: any) => <span className="text-[#6B7280]">{r.email ?? "—"}</span> },
+        { key: "phone", label: "Phone", render: (r: any) => <span className="text-[#6B7280]">{r.phone ?? "—"}</span> },
+        { key: "website", label: "Website", render: (r: any) => <span className="text-[#6B7280]">{r.website ?? "—"}</span> },
       ]}
-      fields={[
-        { name: "name", label: "Publisher name" },
-        { name: "hq", label: "Headquarters" },
-        { name: "founded", label: "Founded", type: "number", placeholder: "1998" },
-        { name: "imprints", label: "Number of imprints", type: "number" },
-        { name: "contact", label: "Primary contact" },
-        { name: "email", label: "Email" },
-        { name: "phone", label: "Phone" },
-        { name: "website", label: "Website" },
-        { name: "status", label: "Status", type: "select", options: ["Active", "Inactive"] },
-        { name: "notes", label: "Internal notes", type: "textarea" },
+      sheetFields={[
+        { key: "name", label: "Publisher name", required: true, placeholder: "e.g. Penguin Random House", full: true },
+        { key: "email", label: "Email", type: "email", placeholder: "contact@publisher.com" },
+        { key: "phone", label: "Phone", type: "tel", placeholder: "+91 98765 43210" },
+        { key: "website", label: "Website", placeholder: "https://publisher.com" },
+        { key: "address", label: "Address", placeholder: "Publisher headquarters address", full: true },
+        { key: "status", label: "Status", type: "select", options: STATUS_OPTIONS },
+        { key: "description", label: "Description", type: "textarea", placeholder: "Brief description of the publisher…", full: true },
       ]}
     />
   );

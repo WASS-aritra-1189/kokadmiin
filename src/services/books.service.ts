@@ -9,6 +9,11 @@ export interface BookBoard extends DropdownItem {}
 export interface BookClass extends DropdownItem { boardId: string; }
 export interface BookSubject extends DropdownItem { classId: string; boardId: string; }
 
+export interface BookInsiderImage {
+  url: string;
+  path: string;
+}
+
 export interface BookItem {
   id: string;
   title: string;
@@ -17,6 +22,7 @@ export interface BookItem {
   author: BookAuthor | null;
   productCategoryId: string | null;
   productCategory: BookCategory | null;
+  publisherId: string | null;
   boardId: string | null;
   board: BookBoard | null;
   classId: string | null;
@@ -34,9 +40,11 @@ export interface BookItem {
   price: string;
   discountPrice: string | null;
   coverImage: string | null;
-  insiderImages: string[] | null;
+  coverImagePath: string | null;
+  insiderImages: BookInsiderImage[] | null;
   quantity: number;
   weight: number | null;
+  isStaffPick: boolean;
   status: string;
   createdAt: string;
 }
@@ -62,6 +70,7 @@ export interface CreateBookPayload {
   title: string;
   authorId?: string;
   productCategoryId?: string;
+  publisherId?: string;
   boardId?: string;
   classId?: string;
   subjectId?: string;
@@ -75,6 +84,7 @@ export interface CreateBookPayload {
   discountPrice?: number;
   quantity?: number;
   weight?: number;
+  isStaffPick?: boolean;
   status?: string;
 }
 
@@ -86,6 +96,7 @@ export const booksService = {
   create: (data: CreateBookPayload) => api.post("/books", data).then(wrap),
   update: (id: string, data: Partial<CreateBookPayload>) => api.patch(`/books/${id}`, data).then(wrap),
   updateStatus: (id: string, status: string) => api.patch(`/books/status/${id}`, { status }).then(wrap),
+  toggleStaffPick: (id: string, isStaffPick: boolean) => api.patch(`/books/${id}`, { isStaffPick }).then(wrap),
   uploadCover: (id: string, file: File) => {
     const fd = new FormData(); fd.append("file", file);
     return api.put(`/books/cover/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } }).then(wrap);
@@ -156,4 +167,11 @@ export const catalogApi = {
       logDrop(`subjectsByBoardClass(${boardId},${classId})`, r.data, result);
       return result;
     }).catch((e) => { console.error("[catalogApi] subjectsByBoardClass ERROR", e.response?.status, e.response?.data); return []; }),
+
+  publishers: () =>
+    api.get("/publishers/public").then((r) => {
+      const result = r.data?.data ?? [];
+      logDrop("publishers", r.data, result);
+      return result;
+    }).catch((e) => { console.error("[catalogApi] publishers ERROR", e.response?.status, e.response?.data); return []; }),
 };

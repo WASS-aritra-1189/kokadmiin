@@ -262,7 +262,8 @@ function OrderDrawer({
     setScheduling(true);
     setMsg(null);
     try {
-      await ordersService.schedulePickup(order.id, pickupDate);
+      const formattedDate = pickupDate.replace("T", " ");
+      await ordersService.schedulePickup(order.id, formattedDate);
       setMsg({ text: "Pickup scheduled successfully.", ok: true });
     } catch (err: any) {
       setMsg({ text: err.response?.data?.message ?? "Failed to schedule pickup.", ok: false });
@@ -431,7 +432,7 @@ function OrderDrawer({
                 </div>
                 <div className="flex items-center gap-2">
                   <input
-                    type="date"
+                    type="datetime-local"
                     value={pickupDate}
                     onChange={(e) => setPickupDate(e.target.value)}
                     className="h-8 flex-1 rounded-md border border-[#E5E7EB] bg-white px-2 text-[12px] outline-none focus:border-[#4F46E5]"

@@ -40,6 +40,7 @@ export const NAV: NavGroup[] = [
       { label: "Genres", to: "/catalog/genres" },
       { label: "Subjects", to: "/catalog/subjects" },
       { label: "Authors", to: "/catalog/authors" },
+      { label: "Publishers", to: "/catalog/publishers" },
       { label: "Boards", to: "/catalog/boards" },
       { label: "Book Series", to: "/catalog/series" },
       { label: "Languages", to: "/catalog/languages" },
@@ -140,7 +141,7 @@ export const NAV: NavGroup[] = [
   {
     label: "Reports", icon: BarChart3,
     items: [
-      { label: "Reports Hub", to: "/reports" },
+      // { label: "Reports Hub", to: "/reports" },
       { label: "Sales", to: "/reports/sales" },
       { label: "Revenue", to: "/reports/revenue" },
       { label: "Inventory Analysis", to: "/reports/inventory" },

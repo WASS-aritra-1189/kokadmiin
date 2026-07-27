@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Download, Plus, Search, Upload, X } from "lucide-react";
+import { Download, Plus, Search, Upload, X, FileSpreadsheet, FileText } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { fetchBooks, createBook, updateBook, deleteBook, deleteMultipleBooks } from "@/store/slices/booksSlice";
 import { catalogApi, booksService, type BookItem, type CreateBookPayload, type DropdownItem, type BookLanguage, type BookClass, type BookSubject, type BookInsiderImage } from "@/services/books.service";
+import { exportToPDF, exportToExcel } from "@/lib/export";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,7 +32,7 @@ const EMPTY: CreateBookPayload = {
 
 function BooksPage() {
   const dispatch = useAppDispatch();
-  const { items, total, loading } = useAppSelector((s) => s.books);
+  const { items, total, loading, error } = useAppSelector((s) => s.books);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [page, setPage] = useState(1);
@@ -49,9 +50,49 @@ function BooksPage() {
 
   useEffect(() => { load(); }, [page, statusFilter]);
 
+  // Show error in UI
+  useEffect(() => {
+    if (error) {
+      alert(error); // Or use a toast
+    }
+  }, [error]);
+
   const totalPages = Math.max(1, Math.ceil(total / LIMIT));
   const toggle = (id: string) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const allChecked = items.length > 0 && items.every((b) => selected.has(b.id));
+
+  const handleExportPDF = () => {
+    const columns = [
+      { key: 'title', header: 'Title' },
+      { key: 'isbn', header: 'ISBN' },
+      { key: 'author', header: 'Author', formatter: (_: any, r: BookItem) => r.author?.name ?? '-' },
+      { key: 'category', header: 'Category', formatter: (_: any, r: BookItem) => r.productCategory?.name ?? '-' },
+      { key: 'genre', header: 'Genre', formatter: (_: any, r: BookItem) => r.genre?.name ?? '-' },
+      { key: 'language', header: 'Language', formatter: (_: any, r: BookItem) => r.language?.name ?? '-' },
+      { key: 'price', header: 'MRP', formatter: (v: number) => `₹${v}` },
+      { key: 'discountPrice', header: 'Price', formatter: (_: any, r: BookItem) => `₹${r.discountPrice ?? r.price}` },
+      { key: 'quantity', header: 'Stock' },
+      { key: 'status', header: 'Status' },
+    ];
+    exportToPDF({ title: 'Books Catalog', filename: 'books-catalog', columns, data: items });
+  };
+
+  const handleExportExcel = () => {
+    const columns = [
+      { key: 'title', header: 'Title' },
+      { key: 'isbn', header: 'ISBN' },
+      { key: 'author', header: 'Author', formatter: (_: any, r: BookItem) => r.author?.name ?? '-' },
+      { key: 'category', header: 'Category', formatter: (_: any, r: BookItem) => r.productCategory?.name ?? '-' },
+      { key: 'genre', header: 'Genre', formatter: (_: any, r: BookItem) => r.genre?.name ?? '-' },
+      { key: 'language', header: 'Language', formatter: (_: any, r: BookItem) => r.language?.name ?? '-' },
+      { key: 'price', header: 'MRP', formatter: (v: number) => `₹${v}` },
+      { key: 'discountPrice', header: 'Selling Price', formatter: (_: any, r: BookItem) => `₹${r.discountPrice ?? r.price}` },
+      { key: 'quantity', header: 'Stock' },
+      { key: 'isStaffPick', header: 'Staff Pick', formatter: (v: boolean) => v ? 'Yes' : 'No' },
+      { key: 'status', header: 'Status' },
+    ];
+    exportToExcel({ title: 'Books Catalog', filename: 'books-catalog', columns, data: items });
+  };
 
   return (
     <div className="p-6">
@@ -62,9 +103,25 @@ function BooksPage() {
           <p className="mt-1 text-[13px] text-[#6B7280]">{total} titles in the catalog.</p>
         </div>
         <div className="flex items-center gap-2">
-          <button className="flex h-8 items-center gap-1.5 rounded-md border border-[#E5E7EB] bg-white px-2.5 text-[12px] font-medium text-[#374151] hover:bg-[#F9FAFB]">
-            <Download className="h-3.5 w-3.5" />Export
-          </button>
+          <div className="relative group">
+            <button className="flex h-8 items-center gap-1.5 rounded-md border border-[#E5E7EB] bg-white px-2.5 text-[12px] font-medium text-[#374151] hover:bg-[#F9FAFB]">
+              <Download className="h-3.5 w-3.5" />Export
+            </button>
+            <div className="absolute right-0 top-full mt-1 hidden min-w-[140px] rounded-md border border-[#E5E7EB] bg-white py-1 shadow-lg group-hover:block z-10">
+              <button
+                onClick={() => handleExportPDF()}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-[12px] text-[#374151] hover:bg-[#F9FAFB]"
+              >
+                <FileText className="h-3.5 w-3.5" />Export PDF
+              </button>
+              <button
+                onClick={() => handleExportExcel()}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-[12px] text-[#374151] hover:bg-[#F9FAFB]"
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" />Export Excel
+              </button>
+            </div>
+          </div>
           <button
             onClick={() => setSheet({ open: true, book: null })}
             className="flex h-8 items-center gap-1.5 rounded-md bg-[#111827] px-2.5 text-[12px] font-medium text-white hover:bg-[#1F2937]"

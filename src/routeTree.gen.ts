@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteImport } from './routes/_admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminDashboardRouteImport } from './routes/_admin.dashboard'
+import { Route as AdminActivityLogsRouteImport } from './routes/_admin.activity-logs'
 import { Route as AdminSplatRouteImport } from './routes/_admin.$'
 import { Route as AdminSchoolsIndexRouteImport } from './routes/_admin.schools.index'
 import { Route as AdminReportsIndexRouteImport } from './routes/_admin.reports.index'
@@ -130,6 +131,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminDashboardRoute = AdminDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminActivityLogsRoute = AdminActivityLogsRouteImport.update({
+  id: '/activity-logs',
+  path: '/activity-logs',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminSplatRoute = AdminSplatRouteImport.update({
@@ -650,6 +656,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/$': typeof AdminSplatRoute
+  '/activity-logs': typeof AdminActivityLogsRoute
   '/dashboard': typeof AdminDashboardRouteWithChildren
   '/books/bulk-update': typeof AdminBooksBulkUpdateRoute
   '/books/bulk-upload': typeof AdminBooksBulkUploadRoute
@@ -754,6 +761,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/$': typeof AdminSplatRoute
+  '/activity-logs': typeof AdminActivityLogsRoute
   '/books/bulk-update': typeof AdminBooksBulkUpdateRoute
   '/books/bulk-upload': typeof AdminBooksBulkUploadRoute
   '/books/import-export': typeof AdminBooksImportExportRoute
@@ -859,6 +867,7 @@ export interface FileRoutesById {
   '/_admin': typeof AdminRouteWithChildren
   '/login': typeof LoginRoute
   '/_admin/$': typeof AdminSplatRoute
+  '/_admin/activity-logs': typeof AdminActivityLogsRoute
   '/_admin/dashboard': typeof AdminDashboardRouteWithChildren
   '/_admin/books/bulk-update': typeof AdminBooksBulkUpdateRoute
   '/_admin/books/bulk-upload': typeof AdminBooksBulkUploadRoute
@@ -965,6 +974,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/$'
+    | '/activity-logs'
     | '/dashboard'
     | '/books/bulk-update'
     | '/books/bulk-upload'
@@ -1069,6 +1079,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/$'
+    | '/activity-logs'
     | '/books/bulk-update'
     | '/books/bulk-upload'
     | '/books/import-export'
@@ -1173,6 +1184,7 @@ export interface FileRouteTypes {
     | '/_admin'
     | '/login'
     | '/_admin/$'
+    | '/_admin/activity-logs'
     | '/_admin/dashboard'
     | '/_admin/books/bulk-update'
     | '/_admin/books/bulk-upload'
@@ -1310,6 +1322,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AdminDashboardRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/activity-logs': {
+      id: '/_admin/activity-logs'
+      path: '/activity-logs'
+      fullPath: '/activity-logs'
+      preLoaderRoute: typeof AdminActivityLogsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/$': {
@@ -2026,6 +2045,7 @@ const AdminDashboardRouteWithChildren = AdminDashboardRoute._addFileChildren(
 
 interface AdminRouteChildren {
   AdminSplatRoute: typeof AdminSplatRoute
+  AdminActivityLogsRoute: typeof AdminActivityLogsRoute
   AdminDashboardRoute: typeof AdminDashboardRouteWithChildren
   AdminBooksBulkUpdateRoute: typeof AdminBooksBulkUpdateRoute
   AdminBooksBulkUploadRoute: typeof AdminBooksBulkUploadRoute
@@ -2124,6 +2144,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminSplatRoute: AdminSplatRoute,
+  AdminActivityLogsRoute: AdminActivityLogsRoute,
   AdminDashboardRoute: AdminDashboardRouteWithChildren,
   AdminBooksBulkUpdateRoute: AdminBooksBulkUpdateRoute,
   AdminBooksBulkUploadRoute: AdminBooksBulkUploadRoute,

@@ -1,6 +1,13 @@
 import { api } from "@/lib/axios";
 
-const wrap = (r: any) => r.data;
+// Handle different response formats properly
+function wrapList(r: any) {
+  return r.data.data;
+}
+
+function wrapData(r: any) {
+  return r.data;
+}
 
 // ─── Country ──────────────────────────────────────────────────────────────────
 
@@ -14,15 +21,15 @@ export interface Country {
 
 export const countryService = {
   getAll: (params: { page?: number; limit?: number; search?: string; status?: string }) =>
-    api.get("/country", { params }).then(wrap),
+    api.get("/country", { params }).then(wrapList),
   create: (data: { name: string; code?: string }) =>
-    api.post("/country", data).then(wrap),
+    api.post("/country", data).then(wrapData),
   update: (id: string, data: { name?: string; code?: string; status?: string }) =>
-    api.patch(`/country/${id}`, data).then(wrap),
+    api.patch(`/country/${id}`, data).then(wrapData),
   changeStatus: (id: string, status: string) =>
-    api.patch(`/country/${id}`, { status }).then(wrap),
+    api.patch(`/country/${id}`, { status }).then(wrapData),
   delete: (id: string) =>
-    api.delete(`/country/${id}`).then(wrap),
+    api.delete(`/country/${id}`).then(wrapData),
 };
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -38,15 +45,15 @@ export interface State {
 
 export const stateService = {
   getAll: (params: { page?: number; limit?: number; search?: string; status?: string; countryId?: string }) =>
-    api.get("/state", { params }).then(wrap),
+    api.get("/state", { params }).then(wrapList),
   create: (data: { name: string; countryId: string }) =>
-    api.post("/state", data).then(wrap),
+    api.post("/state", data).then(wrapData),
   update: (id: string, data: { name?: string; countryId?: string; status?: string }) =>
-    api.patch(`/state/${id}`, data).then(wrap),
+    api.patch(`/state/${id}`, data).then(wrapData),
   changeStatus: (id: string, status: string) =>
-    api.patch(`/state/${id}`, { status }).then(wrap),
+    api.patch(`/state/${id}`, { status }).then(wrapData),
   delete: (id: string) =>
-    api.delete(`/state/${id}`).then(wrap),
+    api.delete(`/state/${id}`).then(wrapData),
 };
 
 // ─── City ─────────────────────────────────────────────────────────────────────
@@ -62,15 +69,15 @@ export interface City {
 
 export const cityService = {
   getAll: (params: { page?: number; limit?: number; search?: string; status?: string; stateId?: string; countryId?: string }) =>
-    api.get("/city", { params }).then(wrap),
+    api.get("/city", { params }).then(wrapList),
   create: (data: { name: string; stateId: string }) =>
-    api.post("/city", data).then(wrap),
+    api.post("/city", data).then(wrapData),
   update: (id: string, data: { name?: string; stateId?: string; status?: string }) =>
-    api.patch(`/city/${id}`, data).then(wrap),
+    api.patch(`/city/${id}`, data).then(wrapData),
   changeStatus: (id: string, status: string) =>
-    api.patch(`/city/${id}`, { status }).then(wrap),
+    api.patch(`/city/${id}`, { status }).then(wrapData),
   delete: (id: string) =>
-    api.delete(`/city/${id}`).then(wrap),
+    api.delete(`/city/${id}`).then(wrapData),
 };
 
 // ─── Language (locale) ────────────────────────────────────────────────────────
@@ -85,13 +92,13 @@ export interface LocaleLanguage {
 
 export const localeLanguageService = {
   getAll: (params: { page?: number; limit?: number; search?: string; status?: string }) =>
-    api.get("/languages", { params }).then(wrap),
+    api.get("/languages", { params }).then(wrapList),
   create: (data: { name: string; code?: string }) =>
-    api.post("/languages", data).then(wrap),
+    api.post("/languages", data).then(wrapData),
   update: (id: string, data: { name?: string; code?: string; status?: string }) =>
-    api.patch(`/languages/${id}`, data).then(wrap),
+    api.patch(`/languages/${id}`, data).then(wrapData),
   changeStatus: (id: string, status: string) =>
-    api.patch(`/languages/${id}`, { status }).then(wrap),
+    api.patch(`/languages/${id}`, { status }).then(wrapData),
   delete: (id: string) =>
-    api.delete(`/languages/${id}`).then(wrap),
+    api.delete(`/languages/${id}`).then(wrapData),
 };

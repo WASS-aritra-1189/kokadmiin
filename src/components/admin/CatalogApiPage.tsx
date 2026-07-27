@@ -18,6 +18,7 @@ export interface CatalogSheetField {
   options?: { value: string; label: string }[];
   placeholder?: string;
   full?: boolean;
+  validate?: (value: string) => string | null; // Return error message or null if valid
 }
 
 interface Props<T extends { id: string; status: string; createdAt: string }> {
@@ -264,14 +265,58 @@ function CatalogSheet({ title, item, fields, defaultForm, createFn, updateFn, ex
     fields.forEach((field) => { f[field.key] = (item as any)[field.key] ?? defaultForm[field.key] ?? ""; });
     return f;
   });
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
+  const set = (k: string, v: any) => {
+    setForm((f) => ({ ...f, [k]: v }));
+    // Clear error when user types
+    if (fieldErrors[k]) {
+      setFieldErrors((e) => { const ne = { ...e }; delete ne[k]; return ne; });
+    }
+  };
+
+  // Validate field
+  const validateField = (field: CatalogSheetField, value: string): string | null => {
+    if (!field.validate) return null;
+    return field.validate(value);
+  };
+
+  // Validate all fields
+  const validateAll = (): boolean => {
+    const errors: Record<string, string> = {};
+    fields.forEach((field) => {
+      const value = form[field.key] ?? "";
+      if (field.required && !value.trim()) {
+        errors[field.key] = `${field.label} is required`;
+      } else if (value && field.validate) {
+        const validationError = field.validate(value);
+        if (validationError) errors[field.key] = validationError;
+      }
+    });
+    setFieldErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Real-time validation on blur
+  const handleBlur = (field: CatalogSheetField) => {
+    const value = form[field.key] ?? "";
+    if (field.required && !value.trim()) {
+      setFieldErrors((e) => ({ ...e, [field.key]: `${field.label} is required` }));
+    } else if (field.validate) {
+      const validationError = field.validate(value);
+      setFieldErrors((e) => ({ ...e, [field.key]: validationError || "" }));
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    
+    // Validate before submit
+    if (!validateAll()) return;
+    
     setSaving(true);
     try {
       if (isEdit) {
@@ -340,11 +385,16 @@ function CatalogSheet({ title, item, fields, defaultForm, createFn, updateFn, ex
                       rows={3}
                       value={form[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
+                      onBlur={() => handleBlur(f)}
                       placeholder={f.placeholder}
-                      className="w-full rounded-md border border-[#E5E7EB] bg-white px-2 py-1.5 text-[12px] outline-none focus:border-[#4F46E5]"
+                      className={`w-full rounded-md border border-[#E5E7EB] bg-white px-2 py-1.5 text-[12px] outline-none focus:border-[#4F46E5] ${fieldErrors[f.key] ? "border-red-500" : ""}`}
                     />
                   ) : f.type === "select" ? (
-                    <select value={form[f.key] ?? ""} onChange={(e) => set(f.key, e.target.value)} className={inp}>
+                    <select
+                      value={form[f.key] ?? ""}
+                      onChange={(e) => set(f.key, e.target.value)}
+                      className={`${inp} ${fieldErrors[f.key] ? "border-red-500" : ""}`}
+                    >
                       {f.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
                     </select>
                   ) : (
@@ -353,9 +403,13 @@ function CatalogSheet({ title, item, fields, defaultForm, createFn, updateFn, ex
                       required={f.required}
                       value={form[f.key] ?? ""}
                       onChange={(e) => set(f.key, e.target.value)}
+                      onBlur={() => handleBlur(f)}
                       placeholder={f.placeholder}
-                      className={inp}
+                      className={`${inp} ${fieldErrors[f.key] ? "border-red-500" : ""}`}
                     />
+                  )}
+                  {fieldErrors[f.key] && (
+                    <p className="mt-1 text-[10px] text-red-500">{fieldErrors[f.key]}</p>
                   )}
                 </div>
               ))}

@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Download } from "lucide-react";
+import { Download, FileSpreadsheet, FileText } from "lucide-react";
 import { books, currency, orders, revenueSeries } from "@/mock/data";
+import { exportToPDF, exportToExcel } from "@/lib/export";
 
 export const Route = createFileRoute("/_admin/reports/")({
   component: ReportsHub,
@@ -12,6 +13,38 @@ const TABS = ["Sales", "Inventory", "Customers", "Tax", "Courier"] as const;
 
 function ReportsHub() {
   const [tab, setTab] = useState<typeof TABS[number]>("Sales");
+
+  const handleExportPDF = () => {
+    const data = books.slice(0, 8).map((b, i) => ({
+      title: b.title,
+      category: b.category,
+      units: 120 - i * 9,
+      revenue: (120 - i * 9) * b.price
+    }));
+    const columns = [
+      { key: 'title', header: 'Title' },
+      { key: 'category', header: 'Category' },
+      { key: 'units', header: 'Units Sold' },
+      { key: 'revenue', header: 'Revenue', formatter: (v: number) => currency(v) },
+    ];
+    exportToPDF({ title: 'Top Titles Revenue Report', filename: 'top-titles-revenue', columns, data });
+  };
+
+  const handleExportExcel = () => {
+    const data = books.slice(0, 8).map((b, i) => ({
+      title: b.title,
+      category: b.category,
+      units: 120 - i * 9,
+      revenue: (120 - i * 9) * b.price
+    }));
+    const columns = [
+      { key: 'title', header: 'Title' },
+      { key: 'category', header: 'Category' },
+      { key: 'units', header: 'Units Sold' },
+      { key: 'revenue', header: 'Revenue', formatter: (v: number) => currency(v) },
+    ];
+    exportToExcel({ title: 'Top Titles Revenue Report', filename: 'top-titles-revenue', columns, data });
+  };
   return (
     <div className="p-6">
       <div className="text-[11px] font-medium uppercase tracking-wider text-[#6B7280]">Reports</div>
@@ -22,7 +55,25 @@ function ReportsHub() {
         </div>
         <div className="flex items-center gap-2">
           <select className="h-8 rounded-md border border-[#E5E7EB] bg-white px-2 text-[12px]"><option>This month</option><option>Last month</option><option>This quarter</option><option>YTD</option></select>
-          <button className="flex h-8 items-center gap-1.5 rounded-md border border-[#E5E7EB] bg-white px-3 text-[12px] font-medium"><Download className="h-3.5 w-3.5" />Export CSV</button>
+          <div className="relative group">
+            <button className="flex h-8 items-center gap-1.5 rounded-md border border-[#E5E7EB] bg-white px-3 text-[12px] font-medium">
+              <Download className="h-3.5 w-3.5" />Export
+            </button>
+            <div className="absolute right-0 top-full mt-1 hidden min-w-[140px] rounded-md border border-[#E5E7EB] bg-white py-1 shadow-lg group-hover:block z-10">
+              <button
+                onClick={handleExportPDF}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-[12px] text-[#374151] hover:bg-[#F9FAFB]"
+              >
+                <FileText className="h-3.5 w-3.5" />Export PDF
+              </button>
+              <button
+                onClick={handleExportExcel}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-[12px] text-[#374151] hover:bg-[#F9FAFB]"
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" />Export Excel
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

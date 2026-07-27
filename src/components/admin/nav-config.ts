@@ -42,10 +42,9 @@ export const NAV: NavGroup[] = [
       { label: "Authors", to: "/catalog/authors" },
       { label: "Publishers", to: "/catalog/publishers" },
       { label: "Boards", to: "/catalog/boards" },
-      { label: "Book Series", to: "/catalog/series" },
+     
       { label: "Languages", to: "/catalog/languages" },
-      { label: "Editions", to: "/catalog/editions" },
-      { label: "Formats", to: "/catalog/formats" },
+     
     ],
   },
   {
@@ -114,18 +113,7 @@ export const NAV: NavGroup[] = [
   
     ],
   },
-  {
-    label: "SEO", icon: Search,
-    items: [
-      { label: "SEO Overview", to: "/seo" },
-      { label: "URL Manager", to: "/seo/urls" },
-      { label: "Meta Tags", to: "/seo/meta" },
-      { label: "Sitemap", to: "/seo/sitemap" },
-      { label: "robots.txt", to: "/seo/robots" },
-      { label: "Schema Markup", to: "/seo/schema" },
-      { label: "Canonical URLs", to: "/seo/canonical" },
-    ],
-  },
+  
   {
     label: "Communication", icon: MessagesSquare,
     items: [
@@ -159,8 +147,8 @@ export const NAV: NavGroup[] = [
       { label: "Menus", to: "/users/menus" },
       { label: "Designation Permissions", to: "/users/designation-permissions" },
       { label: "Staff Permissions", to: "/users/staff-permissions" },
-      { label: "Activity Logs", to: "/users/activity" },
-      { label: "Login History", to: "/users/login-history" },
+      { label: "Activity Logs", to: "/activity-logs" },
+    
     ],
   },
   

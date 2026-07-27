@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from "recharts";
-import { Download, TrendingUp, TrendingDown, DollarSign, ShoppingCart, RotateCcw } from "lucide-react";
+import { Download, TrendingUp, TrendingDown, DollarSign, ShoppingCart, RotateCcw, FileSpreadsheet, FileText } from "lucide-react";
 import { dashboardService } from "@/services/dashboard.service";
+import { exportToPDF, exportToExcel } from "@/lib/export";
 
 export const Route = createFileRoute("/_admin/reports/sales")({
   component: SalesReportPage,
@@ -71,6 +72,26 @@ function SalesReportPage() {
     }
   };
 
+  const handleExportPDF = () => {
+    if (!overview) return;
+    const columns = [
+      { key: 'state', header: 'State' },
+      { key: 'orderCount', header: 'Orders' },
+      { key: 'revenue', header: 'Revenue', formatter: (v: number) => currency(v) },
+    ];
+    exportToPDF({ title: 'Sales by Location', filename: 'sales-by-location', columns, data: salesByLocation });
+  };
+
+  const handleExportExcel = () => {
+    if (!overview) return;
+    const columns = [
+      { key: 'state', header: 'State' },
+      { key: 'orderCount', header: 'Orders' },
+      { key: 'revenue', header: 'Revenue', formatter: (v: number) => currency(v) },
+    ];
+    exportToExcel({ title: 'Sales by Location', filename: 'sales-by-location', columns, data: salesByLocation });
+  };
+
   useEffect(() => { loadData(); }, [groupBy]);
 
   return (
@@ -89,9 +110,25 @@ function SalesReportPage() {
           >
             {groupOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
-          <button className="flex h-8 items-center gap-1.5 rounded-md border border-[#E5E7EB] bg-white px-3 text-[12px] font-medium">
-            <Download className="h-3.5 w-3.5" />Export
-          </button>
+          <div className="relative group">
+            <button className="flex h-8 items-center gap-1.5 rounded-md border border-[#E5E7EB] bg-white px-3 text-[12px] font-medium">
+              <Download className="h-3.5 w-3.5" />Export
+            </button>
+            <div className="absolute right-0 top-full mt-1 hidden min-w-[140px] rounded-md border border-[#E5E7EB] bg-white py-1 shadow-lg group-hover:block z-10">
+              <button
+                onClick={handleExportPDF}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-[12px] text-[#374151] hover:bg-[#F9FAFB]"
+              >
+                <FileText className="h-3.5 w-3.5" />Export PDF
+              </button>
+              <button
+                onClick={handleExportExcel}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-[12px] text-[#374151] hover:bg-[#F9FAFB]"
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" />Export Excel
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

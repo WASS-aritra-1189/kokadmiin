@@ -58,7 +58,7 @@ function DashboardPage() {
             <option value="this_month">This Month</option>
           </select>
           <button className="h-8 rounded-md border border-[#E5E7EB] bg-white px-3 font-medium text-[#374151] hover:bg-[#F9FAFB]">Export</button>
-          <button className="h-8 rounded-md bg-[#111827] px-3 font-medium text-white hover:bg-[#1F2937]">Create order</button>
+          {/* <button className="h-8 rounded-md bg-[#111827] px-3 font-medium text-white hover:bg-[#1F2937]">Create order</button> */}
         </div>
       </div>
 

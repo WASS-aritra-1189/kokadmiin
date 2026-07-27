@@ -26,3 +26,34 @@ api.interceptors.response.use(
     return Promise.reject(err);
   },
 );
+
+// Helper to extract error message from API response
+export function getErrorMessage(err: any): string {
+  // API returned an error response
+  if (err.response?.data) {
+    const data = err.response.data;
+    
+    // Try errors array first
+    if (data?.data?.errors && Array.isArray(data.data.errors)) {
+      return data.data.errors[0];
+    }
+    
+    // Try messageId lookup (if we have message codes)
+    if (data?.messageId) {
+      return data.message; // Backend should return message with messageId
+    }
+    
+    // Try message directly
+    if (data?.message) {
+      return data.message;
+    }
+  }
+  
+  // Network error
+  if (err.code === 'ECONNABORTED' || err.message === 'Network Error') {
+    return 'Network error. Please check your connection.';
+  }
+  
+  // Default
+  return 'Something went wrong. Please try again.';
+}

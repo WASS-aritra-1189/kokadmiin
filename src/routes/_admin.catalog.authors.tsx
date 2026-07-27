@@ -9,6 +9,23 @@ const STATUS_OPTIONS = [
   { value: "DEACTIVE", label: "Deactive" },
 ];
 
+// Validation helpers
+const validateEmail = (value: string): string | null => {
+  if (!value) return null;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? null : "Invalid email address";
+};
+
+const validatePhone = (value: string): string | null => {
+  if (!value) return null;
+  const cleaned = value.replace(/[\s\-()]/g, '');
+  return /^[+]?[\d]{10,15}$/.test(cleaned) ? null : "Invalid phone number (10-15 digits)";
+};
+
+const validateNationality = (value: string): string | null => {
+  if (!value) return null;
+  return value.length >= 2 && value.length <= 50 ? null : "Nationality must be 2-50 characters";
+};
+
 function Page() {
   return (
     <CatalogApiPage
@@ -49,9 +66,9 @@ function Page() {
       ]}
       sheetFields={[
         { key: "name", label: "Full name", required: true, placeholder: "e.g. Ruskin Bond", full: true },
-        { key: "email", label: "Email", type: "email", placeholder: "author@example.com" },
-        { key: "phone", label: "Phone", type: "tel", placeholder: "+91 98765 43210" },
-        { key: "nationality", label: "Nationality", placeholder: "e.g. Indian" },
+        { key: "email", label: "Email", type: "email", placeholder: "author@example.com", validate: validateEmail },
+        { key: "phone", label: "Phone", type: "tel", placeholder: "+91 9876543210", validate: validatePhone },
+        { key: "nationality", label: "Nationality", placeholder: "e.g. Indian", validate: validateNationality },
         { key: "status", label: "Status", type: "select", options: STATUS_OPTIONS },
         { key: "bio", label: "Biography", type: "textarea", placeholder: "Short author biography…", full: true },
       ]}

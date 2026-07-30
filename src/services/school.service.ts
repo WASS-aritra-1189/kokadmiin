@@ -1,3 +1,4 @@
+// src/services/school.service.ts
 import { api } from "@/lib/axios";
 
 const wrap = (r: any) => r.data;
@@ -12,8 +13,13 @@ export interface School {
   state: string | null;
   pincode: string | null;
   description: string | null;
+  limit: number | null;
   status: string;
   createdAt: string;
+  updatedAt: string;
+  createdBy?: string;
+  updatedBy?: string;
+  deletedAt?: string | null;
 }
 
 export interface SchoolClass {
@@ -26,26 +32,72 @@ export interface SchoolClass {
   createdAt: string;
 }
 
+export interface ApiResponse<T> {
+  success: boolean;
+  messageId: string;
+  messageType: string;
+  data: T;
+}
+
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export const schoolService = {
   getAll: (params: { page?: number; limit?: number; search?: string; status?: string }) =>
-    api.get("/schools", { params }).then(wrap),
-  getActive: () => api.get("/schools/active").then(wrap),
+    api.get<ApiResponse<PaginatedResponse<School>>>("/schools", { params })
+      .then(res => res.data.data),
+  
+  getById: (id: string) =>
+    api.get<ApiResponse<School>>(`/schools/${id}`)
+      .then(res => res.data.data),
+  
+  getActive: () =>
+    api.get<ApiResponse<School[]>>("/schools/active")
+      .then(res => res.data.data),
+  
   create: (data: { name: string; email?: string; phone?: string; address?: string; city?: string; state?: string; pincode?: string; description?: string }) =>
-    api.post("/schools", data).then(wrap),
-  update: (id: string, data: any) => api.patch(`/schools/${id}`, data).then(wrap),
+    api.post<ApiResponse<School>>("/schools", data)
+      .then(res => res.data.data),
+  
+  update: (id: string, data: Partial<School>) =>
+    api.patch<ApiResponse<School>>(`/schools/${id}`, data)
+      .then(res => res.data.data),
+  
   changeStatus: (id: string, status: string) =>
-    api.patch(`/schools/status/${id}`, { status }).then(wrap),
-  delete: (id: string) => api.delete(`/schools/${id}`).then(wrap),
+    api.patch<ApiResponse<School>>(`/schools/status/${id}`, { status })
+      .then(res => res.data.data),
+  
+  delete: (id: string) =>
+    api.delete<ApiResponse<void>>(`/schools/${id}`)
+      .then(res => res.data),
 };
 
 export const schoolClassService = {
   getAll: (params: { page?: number; limit?: number; search?: string; boardId?: string; status?: string }) =>
-    api.get("/school-classes", { params }).then(wrap),
-  getByBoard: (boardId: string) => api.get(`/school-classes/by-board/${boardId}`).then(wrap),
+    api.get<ApiResponse<PaginatedResponse<SchoolClass>>>("/school-classes", { params })
+      .then(res => res.data.data),
+  
+  getByBoard: (boardId: string) =>
+    api.get<ApiResponse<SchoolClass[]>>(`/school-classes/by-board/${boardId}`)
+      .then(res => res.data.data),
+  
   create: (data: { name: string; boardId: string; description?: string; status?: string }) =>
-    api.post("/school-classes", data).then(wrap),
-  update: (id: string, data: any) => api.patch(`/school-classes/${id}`, data).then(wrap),
+    api.post<ApiResponse<SchoolClass>>("/school-classes", data)
+      .then(res => res.data.data),
+  
+  update: (id: string, data: Partial<SchoolClass>) =>
+    api.patch<ApiResponse<SchoolClass>>(`/school-classes/${id}`, data)
+      .then(res => res.data.data),
+  
   changeStatus: (id: string, status: string) =>
-    api.patch(`/school-classes/status/${id}`, { status }).then(wrap),
-  delete: (id: string) => api.delete(`/school-classes/${id}`).then(wrap),
+    api.patch<ApiResponse<SchoolClass>>(`/school-classes/status/${id}`, { status })
+      .then(res => res.data.data),
+  
+  delete: (id: string) =>
+    api.delete<ApiResponse<void>>(`/school-classes/${id}`)
+      .then(res => res.data),
 };

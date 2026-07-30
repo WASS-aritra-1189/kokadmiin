@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Download, Plus, Search, Upload, X, FileSpreadsheet, FileText } from "lucide-react";
+import { Download, Plus, Search, Upload, X, FileSpreadsheet, FileText, Eye } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { fetchBooks, createBook, updateBook, deleteBook, deleteMultipleBooks } from "@/store/slices/booksSlice";
 import { catalogApi, booksService, type BookItem, type CreateBookPayload, type DropdownItem, type BookLanguage, type BookClass, type BookSubject, type BookInsiderImage } from "@/services/books.service";
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/_admin/books/")({
   component: BooksPage,
 });
 
-const LIMIT = 10;
+const LIMIT_OPTIONS = [10, 20, 50, 100];
 
 const EMPTY: CreateBookPayload = {
   title: "", authorId: "", productCategoryId: "", publisherId: "", boardId: "", classId: "",
@@ -36,19 +36,42 @@ function BooksPage() {
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [sheet, setSheet] = useState<{ open: boolean; book: BookItem | null }>({ open: false, book: null });
   const [statusChange, setStatusChange] = useState<{ open: boolean; book: BookItem | null; newStatus: string }>({ open: false, book: null, newStatus: "" });
+  const [viewBook, setViewBook] = useState<BookItem | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
 
-  const load = (p = page, s = statusFilter, search = q) => {
+  const load = (p = page, s = statusFilter, search = q, l = limit) => {
     dispatch(fetchBooks({
-      page: p, limit: LIMIT,
+      page: p, limit: l,
       ...(search ? { search } : {}),
       ...(s !== "All" ? { status: s } : {}),
     }));
   };
 
-  useEffect(() => { load(); }, [page, statusFilter]);
+  const handleViewBook = async (bookId: string) => {
+  setViewLoading(true);
+  setViewBook(null);
+  try {
+    const response = await booksService.findOne(bookId);
+    console.log("[BookView] response:", response); // Should be the book object
+    setViewBook(response);
+  } catch (err) {
+    console.error("Failed to fetch book details:", err);
+    alert("Failed to load book details");
+  } finally {
+    setViewLoading(false);
+  }
+};
+
+  useEffect(() => { load(); }, [page, statusFilter, limit]);
+
+  // Reset to page 1 when limit changes
+  useEffect(() => {
+    setPage(1);
+  }, [limit]);
 
   // Show error in UI
   useEffect(() => {
@@ -57,7 +80,7 @@ function BooksPage() {
     }
   }, [error]);
 
-  const totalPages = Math.max(1, Math.ceil(total / LIMIT));
+  const totalPages = Math.max(1, Math.ceil(total / limit));
   const toggle = (id: string) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n; });
   const allChecked = items.length > 0 && items.every((b) => selected.has(b.id));
 
@@ -244,6 +267,13 @@ function BooksPage() {
                   <td className="px-3 py-2 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button
+                        onClick={() => handleViewBook(b.id)}
+                        className="rounded-md border border-[#E5E7EB] px-2 py-1 text-[11px] font-medium text-[#4F46E5] hover:bg-[#EEF2FF]"
+                        title="View details"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </button>
+                      <button
                         onClick={() => {
                           setStatusChange({ open: true, book: b, newStatus: b.status === "ACTIVE" ? "DEACTIVE" : "ACTIVE" });
                         }}
@@ -276,7 +306,19 @@ function BooksPage() {
         </div>
 
         <div className="flex items-center justify-between border-t border-[#F3F4F6] px-3 py-2 text-[11px] text-[#6B7280]">
-          <div>Showing <span className="font-medium text-[#111827]">{items.length}</span> of {total}</div>
+          <div className="flex items-center gap-3">
+            <span>Showing <span className="font-medium text-[#111827]">{items.length}</span> of {total}</span>
+            <label className="flex items-center gap-1.5">
+              <span>Per page:</span>
+              <select
+                value={limit}
+                onChange={(e) => setLimit(Number(e.target.value))}
+                className="h-7 rounded-md border border-[#E5E7EB] bg-white px-2 text-[11px] text-[#111827] outline-none focus:border-[#4F46E5]"
+              >
+                {LIMIT_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </label>
+          </div>
           <div className="flex items-center gap-1">
             <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded-md border border-[#E5E7EB] px-2 py-1 disabled:opacity-40">Prev</button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
@@ -292,6 +334,15 @@ function BooksPage() {
           book={sheet.book}
           onClose={() => setSheet({ open: false, book: null })}
           onSaved={() => { setSheet({ open: false, book: null }); load(); }}
+        />
+      )}
+
+      {/* Book Detail View Modal */}
+      {viewBook && (
+        <BookDetailView
+          book={viewBook}
+          onClose={() => setViewBook(null)}
+          loading={viewLoading}
         />
       )}
 
@@ -322,6 +373,206 @@ function BooksPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+}
+
+// ─── Book Detail View Modal ──────────────────────────────────────────────────
+
+interface BookDetailViewProps {
+  book: BookItem;
+  onClose: () => void;
+  loading?: boolean;
+}
+
+function BookDetailView({ book, onClose, loading }: BookDetailViewProps) {
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+        <div className="bg-white p-8 rounded-lg" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-3">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#4F46E5] border-t-transparent" />
+            <span className="text-[14px] text-[#374151]">Loading book details...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!book) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#E5E7EB] bg-white px-6 py-4">
+          <div>
+            <div className="text-[11px] uppercase tracking-wider text-[#6B7280]">Book Details</div>
+            <h2 className="text-[18px] font-semibold">{book.title}</h2>
+          </div>
+          <button onClick={onClose} className="rounded-md p-1.5 text-[#6B7280] hover:bg-[#F3F4F6]">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Cover and basic info */}
+          <div className="flex gap-6">
+            <div className="flex-shrink-0">
+              {book.coverImage
+                ? <img src={book.coverImage} alt={book.title} className="h-48 w-36 rounded-lg object-cover shadow-md" />
+                : <div className="h-48 w-36 rounded-lg bg-[#F3F4F6] flex items-center justify-center text-[#9CA3AF] text-sm">No cover</div>
+              }
+            </div>
+            <div className="flex-1 space-y-2">
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[13px]">
+                <div>
+                  <span className="text-[#6B7280]">ISBN:</span>
+                  <span className="ml-2 font-mono">{book.isbn || "—"}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B7280]">Status:</span>
+                  <span className="ml-2"><StatusChip status={book.status} /></span>
+                </div>
+                <div>
+                  <span className="text-[#6B7280]">Author:</span>
+                  <span className="ml-2 font-medium">{book.author?.name || "—"}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B7280]">Language:</span>
+                  <span className="ml-2">{book.language?.name || "—"}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B7280]">Publisher:</span>
+                  <span className="ml-2">{book.publisher || "—"}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B7280]">Published Year:</span>
+                  <span className="ml-2">{book.publishedYear || "—"}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B7280]">Pages:</span>
+                  <span className="ml-2">{book.pages || "—"}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B7280]">Staff Pick:</span>
+                  <span className="ml-2">{book.isStaffPick ? "★ Yes" : "☆ No"}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Classification */}
+          <div className="border-t border-[#F3F4F6] pt-4">
+            <h3 className="text-[12px] font-semibold uppercase tracking-wider text-[#6B7280]">Classification</h3>
+            <div className="mt-2 grid grid-cols-3 gap-4 text-[13px]">
+              <div>
+                <span className="text-[#6B7280]">Category:</span>
+                <div className="font-medium">{book.productCategory?.name || "—"}</div>
+              </div>
+              <div>
+                <span className="text-[#6B7280]">Genre:</span>
+                <div className="font-medium">{book.genre?.name || "—"}</div>
+              </div>
+              <div>
+                <span className="text-[#6B7280]">Board:</span>
+                <div className="font-medium">{book.board?.name || "—"}</div>
+              </div>
+              <div>
+                <span className="text-[#6B7280]">Class:</span>
+                <div className="font-medium">{book.schoolClass?.name || book.class?.name || "—"}</div>
+              </div>
+              <div>
+                <span className="text-[#6B7280]">Subject:</span>
+                <div className="font-medium">{book.subject?.name || "—"}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Pricing & Inventory */}
+          <div className="border-t border-[#F3F4F6] pt-4">
+            <h3 className="text-[12px] font-semibold uppercase tracking-wider text-[#6B7280]">Pricing & Inventory</h3>
+            <div className="mt-2 grid grid-cols-4 gap-4 text-[13px]">
+              <div>
+                <span className="text-[#6B7280]">MRP:</span>
+                <div className="font-medium text-[#9CA3AF] line-through">₹{book.price}</div>
+              </div>
+              <div>
+                <span className="text-[#6B7280]">Selling Price:</span>
+                <div className="font-medium text-[#166534]">₹{book.discountPrice ?? book.price}</div>
+              </div>
+              <div>
+                <span className="text-[#6B7280]">Stock:</span>
+                <div className={"font-medium " + (book.quantity === 0 ? "text-[#EF4444]" : book.quantity <= 10 ? "text-[#F59E0B]" : "text-[#111827]")}>
+                  {book.quantity}
+                </div>
+              </div>
+              <div>
+                <span className="text-[#6B7280]">Weight:</span>
+                <div className="font-medium">{book.weight || 0.5} kg</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Ratings */}
+          <div className="border-t border-[#F3F4F6] pt-4">
+            <h3 className="text-[12px] font-semibold uppercase tracking-wider text-[#6B7280]">Ratings</h3>
+            <div className="mt-2 grid grid-cols-2 gap-4 text-[13px]">
+              <div>
+                <span className="text-[#6B7280]">Average Rating:</span>
+                <div className="font-medium text-[#F59E0B]">{book.averageRating || "0.00"} ★</div>
+              </div>
+              <div>
+                <span className="text-[#6B7280]">Total Ratings:</span>
+                <div className="font-medium">{book.totalRatings || 0}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Description */}
+          {book.description && (
+            <div className="border-t border-[#F3F4F6] pt-4">
+              <h3 className="text-[12px] font-semibold uppercase tracking-wider text-[#6B7280]">Description</h3>
+              <p className="mt-2 text-[13px] text-[#374151] leading-relaxed">{book.description}</p>
+            </div>
+          )}
+
+          {/* Insider Images */}
+          {book.insiderImages && book.insiderImages.length > 0 && (
+            <div className="border-t border-[#F3F4F6] pt-4">
+              <h3 className="text-[12px] font-semibold uppercase tracking-wider text-[#6B7280]">Insider Images</h3>
+              <div className="mt-2 flex flex-wrap gap-3">
+                {book.insiderImages.map((img, idx) => (
+                  <img
+                    key={idx}
+                    src={img.url}
+                    alt={`Insider ${idx + 1}`}
+                    className="h-24 w-24 rounded-md object-cover border border-[#E5E7EB] hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => window.open(img.url, '_blank')}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Metadata */}
+          <div className="border-t border-[#F3F4F6] pt-4 text-[11px] text-[#6B7280]">
+            <div className="flex flex-wrap gap-6">
+              <span>Created: {new Date(book.createdAt).toLocaleString()}</span>
+              <span>Updated: {new Date(book.updatedAt).toLocaleString()}</span>
+              <span>ID: <span className="font-mono text-[10px]">{book.id}</span></span>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t border-[#E5E7EB] bg-white px-6 py-3">
+          <button onClick={onClose} className="h-8 rounded-md border border-[#E5E7EB] bg-white px-4 text-[12px] font-medium text-[#374151] hover:bg-[#F9FAFB]">
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

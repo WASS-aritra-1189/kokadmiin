@@ -103,18 +103,20 @@ function Page() {
               <tr className="border-b border-[#E5E7EB] bg-[#FAFAF9]">
                 <th className="px-4 py-2 text-left">Class</th>
                 <th className="px-4 py-2 text-left">Board</th>
+                <th className="px-4 py-2 text-right">Limit</th>
                 <th className="px-4 py-2 text-left">Status</th>
                 <th className="px-4 py-2 text-left">Created</th>
                 <th className="px-4 py-2" />
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={5} className="px-4 py-8 text-center text-[#6B7280]">Loading…</td></tr>}
-              {!loading && items.length === 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-[#6B7280]">No classes found.</td></tr>}
+              {loading && <tr><td colSpan={6} className="px-4 py-8 text-center text-[#6B7280]">Loading…</td></tr>}
+              {!loading && items.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-[#6B7280]">No classes found.</td></tr>}
               {!loading && items.map((item) => (
                 <tr key={item.id} className="border-b border-[#F3F4F6] last:border-0 hover:bg-[#FAFAF9]">
                   <td className="px-4 py-2.5 font-medium">{item.name}</td>
                   <td className="px-4 py-2.5 text-[#6B7280]">{item.board?.name ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-right tabular-nums">{(item as any)?.limit ?? '—'}</td>
                   <td className="px-4 py-2.5">
                     <button
                       onClick={() => handleStatusToggle(item)}

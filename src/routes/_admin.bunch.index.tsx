@@ -1,34 +1,55 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Plus, Search, X } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { Plus, Search, X, Eye } from "lucide-react";
 import { bunchService, type Bunch } from "@/services/bunch.service";
 import { schoolService } from "@/services/school.service";
 import { api } from "@/lib/axios";
 
 export const Route = createFileRoute("/_admin/bunch/")({ component: Page });
 
-const LIMIT = 10;
+const LIMIT_OPTIONS = [10, 20, 50, 100];
 
 function Page() {
   const [items, setItems] = useState<Bunch[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
   const [sheet, setSheet] = useState<{ open: boolean; item: Bunch | null }>({ open: false, item: null });
+  const [viewItem, setViewItem] = useState<Bunch | null>(null);
+  const [viewLoading, setViewLoading] = useState(false);
 
-  const load = async (p = page, search = q) => {
+  const load = async (p = page, search = q, l = limit) => {
     setLoading(true);
     try {
-      const res = await bunchService.getAll({ page: p, limit: LIMIT, ...(search ? { search } : {}) });
-      setItems(res.data?.data ?? []);
-      setTotal(res.data?.total ?? 0);
+      const res = await bunchService.getAll({ page: p, limit: l, ...(search ? { search } : {}) });
+      setItems(Array.isArray(res.data) ? res.data : []);
+      setTotal(res.total ?? 0);
+    } catch (err) {
+      console.error("[BUNCH INDEX] load error:", err);
     } finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, [page]);
+  const handleViewBunch = async (bunchId: string) => {
+    setViewLoading(true);
+    setViewItem(null);
+    try {
+      const response = await bunchService.findOne(bunchId);
+      setViewItem(response);
+    } catch (err) {
+      console.error("Failed to fetch bunch details:", err);
+      alert("Failed to load bunch details");
+    } finally {
+      setViewLoading(false);
+    }
+  };
 
-  const totalPages = Math.max(1, Math.ceil(total / LIMIT));
+  useEffect(() => { load(); }, [page, limit]);
+
+  useEffect(() => { setPage(1); }, [limit]);
+
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const handleStatusToggle = async (item: Bunch) => {
     await bunchService.changeStatus(item.id, item.status === "ACTIVE" ? "DEACTIVE" : "ACTIVE");
@@ -96,8 +117,8 @@ function Page() {
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={9} className="px-4 py-8 text-center text-[#6B7280]">Loading…</td></tr>}
-              {!loading && items.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-[#6B7280]">No bunches found.</td></tr>}
+              {loading && <tr><td colSpan={10} className="px-4 py-8 text-center text-[#6B7280]">Loading…</td></tr>}
+              {!loading && items.length === 0 && <tr><td colSpan={10} className="px-4 py-8 text-center text-[#6B7280]">No bunches found.</td></tr>}
               {!loading && items.map((item) => (
                 <tr key={item.id} className="border-b border-[#F3F4F6] last:border-0 hover:bg-[#FAFAF9]">
                   <td className="px-4 py-2.5 font-medium">{item.name}</td>
@@ -115,8 +136,25 @@ function Page() {
                   <td className="px-4 py-2.5 text-[#6B7280]">{new Date(item.createdAt).toLocaleDateString("en-IN")}</td>
                   <td className="px-4 py-2.5 text-right">
                     <div className="flex items-center justify-end gap-1.5">
-                      <button onClick={() => setSheet({ open: true, item })} className="rounded-md border border-[#E5E7EB] px-2 py-1 text-[11px] font-medium text-[#374151] hover:bg-[#F9FAFB]">Edit</button>
-                      <button onClick={() => handleDelete(item.id)} className="rounded-md border border-[#FEE2E2] px-2 py-1 text-[11px] font-medium text-[#EF4444] hover:bg-[#FEF2F2]">Delete</button>
+                      <button 
+                        onClick={() => handleViewBunch(item.id)} 
+                        className="rounded-md border border-[#E5E7EB] px-2 py-1 text-[11px] font-medium text-[#4F46E5] hover:bg-[#EEF2FF]"
+                        title="View details"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </button>
+                      <button 
+                        onClick={() => setSheet({ open: true, item })} 
+                        className="rounded-md border border-[#E5E7EB] px-2 py-1 text-[11px] font-medium text-[#374151] hover:bg-[#F9FAFB]"
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(item.id)} 
+                        className="rounded-md border border-[#FEE2E2] px-2 py-1 text-[11px] font-medium text-[#EF4444] hover:bg-[#FEF2F2]"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -126,7 +164,19 @@ function Page() {
         </div>
 
         <div className="flex items-center justify-between border-t border-[#F3F4F6] px-3 py-2 text-[11px] text-[#6B7280]">
-          <div>Showing <span className="font-medium text-[#111827]">{items.length}</span> of {total}</div>
+          <div className="flex items-center gap-3">
+            <span>Showing <span className="font-medium text-[#111827]">{items.length}</span> of {total}</span>
+            <label className="flex items-center gap-1.5">
+              <span>Per page:</span>
+              <select
+                value={limit}
+                onChange={(e) => setLimit(Number(e.target.value))}
+                className="h-7 rounded-md border border-[#E5E7EB] bg-white px-2 text-[11px] text-[#111827] outline-none focus:border-[#4F46E5]"
+              >
+                {LIMIT_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
+            </label>
+          </div>
           <div className="flex items-center gap-1">
             <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="rounded-md border border-[#E5E7EB] px-2 py-1 disabled:opacity-40">Prev</button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
@@ -144,6 +194,161 @@ function Page() {
           onSaved={() => { setSheet({ open: false, item: null }); load(); }}
         />
       )}
+
+      {/* Bunch Detail View Modal */}
+      {viewItem && (
+        <BunchDetailView
+          bunch={viewItem}
+          onClose={() => setViewItem(null)}
+          loading={viewLoading}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Bunch Detail View Modal ──────────────────────────────────────────────────
+
+function BunchDetailView({ bunch, onClose, loading }: { bunch: Bunch; onClose: () => void; loading?: boolean }) {
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+        <div className="bg-white p-8 rounded-lg" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center gap-3">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#4F46E5] border-t-transparent" />
+            <span className="text-[14px] text-[#374151]">Loading bunch details...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!bunch) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="relative max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#E5E7EB] bg-white px-6 py-4">
+          <div>
+            <div className="text-[11px] uppercase tracking-wider text-[#6B7280]">Bunch Details</div>
+            <h2 className="text-[18px] font-semibold">{bunch.name}</h2>
+          </div>
+          <button onClick={onClose} className="rounded-md p-1.5 text-[#6B7280] hover:bg-[#F3F4F6]">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 space-y-6">
+          {/* Basic Info */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-[13px]">
+            <div>
+              <span className="text-[#6B7280]">Bunch Name:</span>
+              <div className="font-medium">{bunch.name}</div>
+            </div>
+            <div>
+              <span className="text-[#6B7280]">Status:</span>
+              <div>
+                <span className={"inline-block rounded-full px-2 py-0.5 text-[11px] font-medium " + 
+                  (bunch.status === "ACTIVE" ? "bg-[#DCFCE7] text-[#166534]" : "bg-[#F3F4F6] text-[#4B5563]")
+                }>
+                  {bunch.status}
+                </span>
+              </div>
+            </div>
+            <div>
+              <span className="text-[#6B7280]">Class:</span>
+              <div className="font-medium">{bunch.class?.name || "—"}</div>
+            </div>
+            <div>
+              <span className="text-[#6B7280]">Language:</span>
+              <div className="font-medium">{bunch.language?.name || "—"}</div>
+            </div>
+            <div>
+              <span className="text-[#6B7280]">Total Amount:</span>
+              <div className="font-medium">₹{Number(bunch.totalAmount).toFixed(2)}</div>
+            </div>
+            <div>
+              <span className="text-[#6B7280]">Quantity:</span>
+              <div className="font-medium">{bunch.quantity}</div>
+            </div>
+            {bunch.description && (
+              <div className="col-span-2">
+                <span className="text-[#6B7280]">Description:</span>
+                <div className="mt-1 text-[#374151] leading-relaxed">{bunch.description}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Schools List */}
+          <div className="border-t border-[#F3F4F6] pt-4">
+            <h3 className="text-[12px] font-semibold uppercase tracking-wider text-[#6B7280]">
+              Schools ({bunch.schools?.length ?? 0})
+            </h3>
+            {bunch.schools && bunch.schools.length > 0 ? (
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                {bunch.schools.map((school) => (
+                  <div key={school.id} className="rounded-md border border-[#E5E7EB] bg-[#FAFAF9] px-3 py-2 text-[12px]">
+                    <div className="font-medium">{school.name}</div>
+                    <div className="text-[10px] text-[#6B7280]">{school.city}, {school.state}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-[12px] text-[#9CA3AF]">No schools assigned to this bunch.</p>
+            )}
+          </div>
+
+          {/* Books List */}
+          <div className="border-t border-[#F3F4F6] pt-4">
+            <h3 className="text-[12px] font-semibold uppercase tracking-wider text-[#6B7280]">
+              Books ({bunch.books?.length ?? 0})
+            </h3>
+            {bunch.books && bunch.books.length > 0 ? (
+              <div className="mt-2 space-y-1.5">
+                {bunch.books.map((book) => (
+                  <div key={book.id} className="flex items-center justify-between rounded-md border border-[#E5E7EB] bg-[#FAFAF9] px-3 py-2 text-[12px]">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{book.title}</span>
+                      {book.isbn && (
+                        <span className="text-[10px] text-[#6B7280] font-mono">ISBN: {book.isbn}</span>
+                      )}
+                    </div>
+                    {book.price && (
+                      <span className="text-[11px] font-medium">₹{book.discountPrice ?? book.price}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-2 text-[12px] text-[#9CA3AF]">No books in this bunch.</p>
+            )}
+          </div>
+
+          {/* Metadata */}
+          <div className="border-t border-[#F3F4F6] pt-4 text-[11px] text-[#6B7280]">
+            <div className="flex gap-6">
+              <span>Created: {new Date(bunch.createdAt).toLocaleString()}</span>
+              <span>ID: <span className="font-mono text-[10px]">{bunch.id}</span></span>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 flex items-center justify-end gap-2 border-t border-[#E5E7EB] bg-white px-6 py-3">
+          <button 
+            onClick={() => {
+              onClose();
+              // Open edit sheet with this bunch
+              // You can pass the bunch to edit if needed
+            }} 
+            className="h-8 rounded-md border border-[#E5E7EB] bg-white px-4 text-[12px] font-medium text-[#374151] hover:bg-[#F9FAFB]"
+          >
+            Close
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -159,6 +364,7 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
     languageId: item?.languageId ?? "",
     totalAmount: item?.totalAmount ?? 0,
     quantity: item?.quantity ?? 0,
+    // limit: item?.limit ?? null,
     status: item?.status ?? "ACTIVE",
     schoolIds: item?.schools?.map(s => s.id) ?? [] as string[],
     bookIds: item?.books?.map(b => b.id) ?? [] as string[],
@@ -171,15 +377,69 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
   const [languages, setLanguages] = useState<{ id: string; name: string }[]>([]);
   const [books, setBooks] = useState<{ id: string; title: string }[]>([]);
-  const [bookToAdd, setBookToAdd] = useState("");
+  const [booksLoading, setBooksLoading] = useState(false);
+  const [booksPage, setBooksPage] = useState(1);
+  const [booksHasMore, setBooksHasMore] = useState(true);
+  const [showBookDropdown, setShowBookDropdown] = useState(false);
+  const [bookSearch, setBookSearch] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const loadBooks = async (page = 1, append = false) => {
+    if (booksLoading) return;
+    setBooksLoading(true);
+    try {
+      // When searching, use higher limit to search all books
+      const params: any = { status: 'ACTIVE', limit: bookSearch ? 1000 : 10, page };
+      if (bookSearch) {
+        params.search = bookSearch;
+      }
+      const res = await api.get("/books", { params });
+      const newBooks = (res.data as { data?: { data?: { id: string; title: string }[] } })?.data?.data ?? [];
+      
+      if (append) {
+        setBooks(prev => [...prev, ...newBooks.filter(b => !prev.some(pb => pb.id === b.id))]);
+      } else {
+        setBooks(newBooks);
+      }
+      setBooksHasMore(newBooks.length === 10);
+      setBooksPage(page);
+    } catch {
+      // ignore
+    } finally {
+      setBooksLoading(false);
+    }
+  };
+
+  const handleDropdownScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLDivElement;
+    const atBottom = target.scrollHeight - target.scrollTop <= target.clientHeight + 20;
+    if (atBottom && booksHasMore && !booksLoading) {
+      loadBooks(booksPage + 1, true);
+    }
+  };
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowBookDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Load more when search changes
+  useEffect(() => {
+    setBooksPage(1);
+    setBooksHasMore(true);
+    loadBooks(1, false);
+  }, [bookSearch]);
 
   useEffect(() => {
     schoolService.getActive().then((r) => setSchools(r.data ?? []));
     api.get("/languages/active").then((r) => setLanguages((r.data as any)?.data ?? []));
-    api.get("/books", { params: { status: "ACTIVE" } })
-      .then((r) => setBooks((r.data as { data?: { data?: { id: string; title: string }[] } })?.data?.data ?? []))
-      .catch(() => setBooks([]));
-    // Load all classes (no board filter needed here)
+    loadBooks(1, false);
     api.get("/school-classes", { params: { limit: 100 } }).then((r) => setClasses((r.data as any)?.data?.data ?? []));
   }, []);
 
@@ -190,18 +450,15 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
     }));
   };
 
-  const addBook = () => {
-    if (!bookToAdd) return;
-    setForm((current) => (
-      current.bookIds.includes(bookToAdd)
-        ? current
-        : { ...current, bookIds: [...current.bookIds, bookToAdd] }
-    ));
-    setBookToAdd("");
+  const addBook = (bookId: string) => {
+    if (!bookId || form.bookIds.includes(bookId)) return;
+    setForm(f => ({ ...f, bookIds: [...f.bookIds, bookId] }));
+    setShowBookDropdown(false);
+    setBookSearch("");
   };
 
   const removeBook = (id: string) => {
-    setForm((current) => ({ ...current, bookIds: current.bookIds.filter((bookId) => bookId !== id) }));
+    setForm(f => ({ ...f, bookIds: f.bookIds.filter(bookId => bookId !== id) }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -216,6 +473,7 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
           classId: form.classId,
           languageId: form.languageId,
           totalAmount: Number(form.totalAmount),
+          // limit: form.limit,
           status: form.status,
           schoolIds: form.schoolIds,
           bookIds: form.bookIds,
@@ -228,6 +486,7 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
           languageId: form.languageId,
           totalAmount: Number(form.totalAmount),
           quantity: Number(form.quantity),
+          // limit: form.limit,
           schoolIds: form.schoolIds,
           bookIds: form.bookIds,
           status: form.status,
@@ -280,12 +539,11 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
                 <label className="mb-1 block text-[11px] font-medium text-[#374151]">Total amount (₹) *</label>
                 <input required type="number" min="0" step="0.01" value={form.totalAmount} onChange={(e) => setForm(f => ({ ...f, totalAmount: e.target.value as any }))} className={inp} />
               </div>
-              {!isEdit && (
-                <div>
-                  <label className="mb-1 block text-[11px] font-medium text-[#374151]">Quantity *</label>
-                  <input required type="number" min="0" value={form.quantity} onChange={(e) => setForm(f => ({ ...f, quantity: e.target.value as any }))} className={inp} />
-                </div>
-              )}
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-[#374151]">Quantity *</label>
+                <input required type="number" min="0" value={form.quantity} onChange={(e) => setForm(f => ({ ...f, quantity: e.target.value as any }))} className={inp} />
+              </div>
+              
               <div>
                 <label className="mb-1 block text-[11px] font-medium text-[#374151]">Status</label>
                 <select value={form.status} onChange={(e) => setForm(f => ({ ...f, status: e.target.value }))} className={inp}>
@@ -320,36 +578,52 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
               </div>
             </div>
 
-            {/* Books multi-select */}
-            <div>
+            {/* Books multi-select with scroll pagination */}
+            <div ref={dropdownRef}>
               <label className="mb-1 block text-[11px] font-medium text-[#374151]">
                 Books * <span className="text-[#6B7280]">({form.bookIds.length} selected)</span>
               </label>
-              <div className="flex gap-2">
-                <select
-                  value={bookToAdd}
-                  onChange={(e) => setBookToAdd(e.target.value)}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search books..."
+                  value={bookSearch}
+                  onChange={(e) => setBookSearch(e.target.value)}
+                  onFocus={() => { setShowBookDropdown(true); if (books.length === 0) loadBooks(1, false); }}
                   className={inp}
-                  disabled={books.length === 0}
-                >
-                  <option value="">{books.length === 0 ? "No books found" : "Select a book…"}</option>
-                  {books
-                    .filter((book) => !form.bookIds.includes(book.id))
-                    .map((book) => <option key={book.id} value={book.id}>{book.title}</option>)}
-                </select>
-                <button
-                  type="button"
-                  onClick={addBook}
-                  disabled={!bookToAdd}
-                  className="h-8 shrink-0 rounded-md bg-[#111827] px-3 text-[12px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  Add book
-                </button>
+                />
+                {showBookDropdown && (
+                  <div 
+                    className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-md border border-[#E5E7EB] bg-white shadow-lg"
+                    onScroll={handleDropdownScroll}
+                  >
+                    {booksLoading && books.length === 0 && (
+                      <div className="p-3 text-center text-[11px] text-[#6B7280]">Loading...</div>
+                    )}
+                    {books.filter(b => !form.bookIds.includes(b.id) && (!bookSearch || b.title.toLowerCase().includes(bookSearch.toLowerCase()))).map((book) => (
+                      <div
+                        key={book.id}
+                        onClick={() => addBook(book.id)}
+                        className="cursor-pointer px-3 py-2 text-[12px] hover:bg-[#F9FAFB] border-b border-[#F3F4F6] last:border-0"
+                      >
+                        {book.title}
+                      </div>
+                    ))}
+                    {booksLoading && books.length > 0 && (
+                      <div className="p-2 text-center text-[10px] text-[#6B7280]">Loading more...</div>
+                    )}
+                    {!booksLoading && books.filter(b => !form.bookIds.includes(b.id) && (!bookSearch || b.title.toLowerCase().includes(bookSearch.toLowerCase()))).length === 0 && (
+                      <div className="p-3 text-center text-[11px] text-[#9CA3AF]">No books found</div>
+                    )}
+                  </div>
+                )}
               </div>
+
+              {/* Selected books list */}
               <div className="mt-2 max-h-40 overflow-y-auto rounded-md border border-[#E5E7EB] bg-white p-2 space-y-1">
-                {form.bookIds.length === 0 && <div className="text-[11px] text-[#9CA3AF]">Select a book from the dropdown to add it.</div>}
+                {form.bookIds.length === 0 && <div className="text-[11px] text-[#9CA3AF]">Search and select books to add them here.</div>}
                 {form.bookIds.map((bookId) => {
-                  const book = books.find((entry) => entry.id === bookId) ?? item?.books?.find((entry) => entry.id === bookId);
+                  const book = books.find((b) => b.id === bookId) ?? item?.books?.find((b) => b.id === bookId);
                   return (
                     <div key={bookId} className="flex items-center justify-between gap-2 rounded px-1 py-1 hover:bg-[#F9FAFB]">
                       <span className="truncate text-[12px]">{book?.title ?? "Selected book"}</span>

@@ -1,39 +1,31 @@
 import { api } from "@/lib/axios";
 
-// Paginated response wrapper - returns full paginated object
-// bunch.service.ts
+// Paginated response wrapper - handles nested paginated response
 const wrapPaginated = (r: any) => {
-  console.log("[wrapPaginated] input r.data:", r.data);
+  const responseData = r.data;
   
-  // Response structure: { success: true, data: { data: [...], total: X, page: Y, limit: Z } }
-  const responseData = r.data?.data;
-  
-  // Check if responseData exists and has a 'data' property (which is the array)
-  if (responseData && typeof responseData === 'object' && 'data' in responseData) {
-    // Extract the actual array from the nested structure
-    const result = {
-      data: Array.isArray(responseData.data) ? responseData.data : [],
-      total: responseData.total ?? 0,
-      page: responseData.page ?? 1,
-      limit: responseData.limit ?? 10
-    };
-    console.log("[wrapPaginated] output:", result);
-    console.log("[wrapPaginated] output.data is array:", Array.isArray(result.data));
-    return result;
-  }
-  
-  // Fallback: if responseData is already an array
-  if (Array.isArray(responseData)) {
+  // Handle different response structures
+  if (responseData?.data && typeof responseData.data === 'object' && 'data' in responseData.data) {
+    // Structure: { data: { data: [...], total: X, page: Y, limit: Z } }
     return {
-      data: responseData,
-      total: responseData.length,
-      page: 1,
-      limit: responseData.length
+      data: responseData.data.data ?? [],
+      total: responseData.data.total ?? 0,
+      page: responseData.data.page ?? 1,
+      limit: responseData.data.limit ?? 10
     };
   }
   
-  // Last resort fallback
-  console.warn("[wrapPaginated] Unexpected response structure:", r.data);
+  if (Array.isArray(responseData?.data)) {
+    // Structure: { data: [...] }
+    return {
+      data: responseData.data,
+      total: responseData.data.length,
+      page: 1,
+      limit: responseData.data.length
+    };
+  }
+  
+  // Fallback
   return {
     data: [],
     total: 0,
@@ -43,10 +35,13 @@ const wrapPaginated = (r: any) => {
 };
 
 // Array response wrapper (direct array from data.data)
-const wrapArray = (r: any) => r.data?.data;
+const wrapArray = (r: any) => {
+  const data = r.data?.data;
+  return Array.isArray(data) ? data : [];
+};
 
 // Single item response wrapper
-const wrap = (r: any) => r.data.data;
+const wrap = (r: any) => r.data?.data ?? r.data;
 
 export interface Bunch {
   id: string;
@@ -59,15 +54,8 @@ export interface Bunch {
   status: string;
   class?: { id: string; name: string; board?: { id: string; name: string } } | null;
   language?: { id: string; name: string } | null;
-  schools?: {
-    city: ReactNode;
-    state: ReactNode; id: string; name: string 
-}[];
-  books?: {
-    isbn: import("react").JSX.Element;
-    price: import("react").JSX.Element;
-    discountPrice: any; id: string; title: string 
-}[];
+  schools?: { id: string; name: string }[];
+  books?: { id: string; title: string }[];
   createdAt: string;
 }
 
@@ -111,7 +99,6 @@ export const bunchService = {
   changeStatus: (id: string, status: string) =>
     api.patch(`/bunches/status/${id}`, { status }).then(wrap),
   delete: (id: string) => api.delete(`/bunches/${id}`).then(wrap),
-  findOne:(id:string)=>api.get(`/bunches/${id}`).then(wrap)
 };
 
 export const bunchOrderService = {

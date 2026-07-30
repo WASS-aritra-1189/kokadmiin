@@ -46,6 +46,7 @@ import { Route as AdminSettingsStoreRouteImport } from './routes/_admin.settings
 import { Route as AdminSettingsSmsRouteImport } from './routes/_admin.settings.sms'
 import { Route as AdminSettingsShippingRouteImport } from './routes/_admin.settings.shipping'
 import { Route as AdminSettingsPaymentsRouteImport } from './routes/_admin.settings.payments'
+import { Route as AdminSettingsPagesRouteImport } from './routes/_admin.settings.pages'
 import { Route as AdminSettingsNotificationsRouteImport } from './routes/_admin.settings.notifications'
 import { Route as AdminSettingsMaintenanceRouteImport } from './routes/_admin.settings.maintenance'
 import { Route as AdminSettingsLogsRouteImport } from './routes/_admin.settings.logs'
@@ -108,7 +109,9 @@ import { Route as AdminCatalogCategoriesRouteImport } from './routes/_admin.cata
 import { Route as AdminCatalogBrandsRouteImport } from './routes/_admin.catalog.brands'
 import { Route as AdminCatalogBoardsRouteImport } from './routes/_admin.catalog.boards'
 import { Route as AdminCatalogAuthorsRouteImport } from './routes/_admin.catalog.authors'
+import { Route as AdminBunchReturnsRouteImport } from './routes/_admin.bunch.returns'
 import { Route as AdminBunchOrdersRouteImport } from './routes/_admin.bunch.orders'
+import { Route as AdminBunchExchangesRouteImport } from './routes/_admin.bunch.exchanges'
 import { Route as AdminBooksImportExportRouteImport } from './routes/_admin.books.import-export'
 import { Route as AdminBooksBulkUploadRouteImport } from './routes/_admin.books.bulk-upload'
 import { Route as AdminBooksBulkUpdateRouteImport } from './routes/_admin.books.bulk-update'
@@ -299,6 +302,11 @@ const AdminSettingsShippingRoute = AdminSettingsShippingRouteImport.update({
 const AdminSettingsPaymentsRoute = AdminSettingsPaymentsRouteImport.update({
   id: '/settings/payments',
   path: '/settings/payments',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminSettingsPagesRoute = AdminSettingsPagesRouteImport.update({
+  id: '/settings/pages',
+  path: '/settings/pages',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminSettingsNotificationsRoute =
@@ -625,9 +633,19 @@ const AdminCatalogAuthorsRoute = AdminCatalogAuthorsRouteImport.update({
   path: '/catalog/authors',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminBunchReturnsRoute = AdminBunchReturnsRouteImport.update({
+  id: '/bunch/returns',
+  path: '/bunch/returns',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminBunchOrdersRoute = AdminBunchOrdersRouteImport.update({
   id: '/bunch/orders',
   path: '/bunch/orders',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminBunchExchangesRoute = AdminBunchExchangesRouteImport.update({
+  id: '/bunch/exchanges',
+  path: '/bunch/exchanges',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminBooksImportExportRoute = AdminBooksImportExportRouteImport.update({
@@ -661,7 +679,9 @@ export interface FileRoutesByFullPath {
   '/books/bulk-update': typeof AdminBooksBulkUpdateRoute
   '/books/bulk-upload': typeof AdminBooksBulkUploadRoute
   '/books/import-export': typeof AdminBooksImportExportRoute
+  '/bunch/exchanges': typeof AdminBunchExchangesRoute
   '/bunch/orders': typeof AdminBunchOrdersRoute
+  '/bunch/returns': typeof AdminBunchReturnsRoute
   '/catalog/authors': typeof AdminCatalogAuthorsRoute
   '/catalog/boards': typeof AdminCatalogBoardsRoute
   '/catalog/brands': typeof AdminCatalogBrandsRoute
@@ -724,6 +744,7 @@ export interface FileRoutesByFullPath {
   '/settings/logs': typeof AdminSettingsLogsRoute
   '/settings/maintenance': typeof AdminSettingsMaintenanceRoute
   '/settings/notifications': typeof AdminSettingsNotificationsRoute
+  '/settings/pages': typeof AdminSettingsPagesRoute
   '/settings/payments': typeof AdminSettingsPaymentsRoute
   '/settings/shipping': typeof AdminSettingsShippingRoute
   '/settings/sms': typeof AdminSettingsSmsRoute
@@ -765,7 +786,9 @@ export interface FileRoutesByTo {
   '/books/bulk-update': typeof AdminBooksBulkUpdateRoute
   '/books/bulk-upload': typeof AdminBooksBulkUploadRoute
   '/books/import-export': typeof AdminBooksImportExportRoute
+  '/bunch/exchanges': typeof AdminBunchExchangesRoute
   '/bunch/orders': typeof AdminBunchOrdersRoute
+  '/bunch/returns': typeof AdminBunchReturnsRoute
   '/catalog/authors': typeof AdminCatalogAuthorsRoute
   '/catalog/boards': typeof AdminCatalogBoardsRoute
   '/catalog/brands': typeof AdminCatalogBrandsRoute
@@ -828,6 +851,7 @@ export interface FileRoutesByTo {
   '/settings/logs': typeof AdminSettingsLogsRoute
   '/settings/maintenance': typeof AdminSettingsMaintenanceRoute
   '/settings/notifications': typeof AdminSettingsNotificationsRoute
+  '/settings/pages': typeof AdminSettingsPagesRoute
   '/settings/payments': typeof AdminSettingsPaymentsRoute
   '/settings/shipping': typeof AdminSettingsShippingRoute
   '/settings/sms': typeof AdminSettingsSmsRoute
@@ -872,7 +896,9 @@ export interface FileRoutesById {
   '/_admin/books/bulk-update': typeof AdminBooksBulkUpdateRoute
   '/_admin/books/bulk-upload': typeof AdminBooksBulkUploadRoute
   '/_admin/books/import-export': typeof AdminBooksImportExportRoute
+  '/_admin/bunch/exchanges': typeof AdminBunchExchangesRoute
   '/_admin/bunch/orders': typeof AdminBunchOrdersRoute
+  '/_admin/bunch/returns': typeof AdminBunchReturnsRoute
   '/_admin/catalog/authors': typeof AdminCatalogAuthorsRoute
   '/_admin/catalog/boards': typeof AdminCatalogBoardsRoute
   '/_admin/catalog/brands': typeof AdminCatalogBrandsRoute
@@ -935,6 +961,7 @@ export interface FileRoutesById {
   '/_admin/settings/logs': typeof AdminSettingsLogsRoute
   '/_admin/settings/maintenance': typeof AdminSettingsMaintenanceRoute
   '/_admin/settings/notifications': typeof AdminSettingsNotificationsRoute
+  '/_admin/settings/pages': typeof AdminSettingsPagesRoute
   '/_admin/settings/payments': typeof AdminSettingsPaymentsRoute
   '/_admin/settings/shipping': typeof AdminSettingsShippingRoute
   '/_admin/settings/sms': typeof AdminSettingsSmsRoute
@@ -979,7 +1006,9 @@ export interface FileRouteTypes {
     | '/books/bulk-update'
     | '/books/bulk-upload'
     | '/books/import-export'
+    | '/bunch/exchanges'
     | '/bunch/orders'
+    | '/bunch/returns'
     | '/catalog/authors'
     | '/catalog/boards'
     | '/catalog/brands'
@@ -1042,6 +1071,7 @@ export interface FileRouteTypes {
     | '/settings/logs'
     | '/settings/maintenance'
     | '/settings/notifications'
+    | '/settings/pages'
     | '/settings/payments'
     | '/settings/shipping'
     | '/settings/sms'
@@ -1083,7 +1113,9 @@ export interface FileRouteTypes {
     | '/books/bulk-update'
     | '/books/bulk-upload'
     | '/books/import-export'
+    | '/bunch/exchanges'
     | '/bunch/orders'
+    | '/bunch/returns'
     | '/catalog/authors'
     | '/catalog/boards'
     | '/catalog/brands'
@@ -1146,6 +1178,7 @@ export interface FileRouteTypes {
     | '/settings/logs'
     | '/settings/maintenance'
     | '/settings/notifications'
+    | '/settings/pages'
     | '/settings/payments'
     | '/settings/shipping'
     | '/settings/sms'
@@ -1189,7 +1222,9 @@ export interface FileRouteTypes {
     | '/_admin/books/bulk-update'
     | '/_admin/books/bulk-upload'
     | '/_admin/books/import-export'
+    | '/_admin/bunch/exchanges'
     | '/_admin/bunch/orders'
+    | '/_admin/bunch/returns'
     | '/_admin/catalog/authors'
     | '/_admin/catalog/boards'
     | '/_admin/catalog/brands'
@@ -1252,6 +1287,7 @@ export interface FileRouteTypes {
     | '/_admin/settings/logs'
     | '/_admin/settings/maintenance'
     | '/_admin/settings/notifications'
+    | '/_admin/settings/pages'
     | '/_admin/settings/payments'
     | '/_admin/settings/shipping'
     | '/_admin/settings/sms'
@@ -1553,6 +1589,13 @@ declare module '@tanstack/react-router' {
       path: '/settings/payments'
       fullPath: '/settings/payments'
       preLoaderRoute: typeof AdminSettingsPaymentsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/settings/pages': {
+      id: '/_admin/settings/pages'
+      path: '/settings/pages'
+      fullPath: '/settings/pages'
+      preLoaderRoute: typeof AdminSettingsPagesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/settings/notifications': {
@@ -1989,11 +2032,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCatalogAuthorsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/bunch/returns': {
+      id: '/_admin/bunch/returns'
+      path: '/bunch/returns'
+      fullPath: '/bunch/returns'
+      preLoaderRoute: typeof AdminBunchReturnsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/bunch/orders': {
       id: '/_admin/bunch/orders'
       path: '/bunch/orders'
       fullPath: '/bunch/orders'
       preLoaderRoute: typeof AdminBunchOrdersRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/bunch/exchanges': {
+      id: '/_admin/bunch/exchanges'
+      path: '/bunch/exchanges'
+      fullPath: '/bunch/exchanges'
+      preLoaderRoute: typeof AdminBunchExchangesRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/books/import-export': {
@@ -2050,7 +2107,9 @@ interface AdminRouteChildren {
   AdminBooksBulkUpdateRoute: typeof AdminBooksBulkUpdateRoute
   AdminBooksBulkUploadRoute: typeof AdminBooksBulkUploadRoute
   AdminBooksImportExportRoute: typeof AdminBooksImportExportRoute
+  AdminBunchExchangesRoute: typeof AdminBunchExchangesRoute
   AdminBunchOrdersRoute: typeof AdminBunchOrdersRoute
+  AdminBunchReturnsRoute: typeof AdminBunchReturnsRoute
   AdminCatalogAuthorsRoute: typeof AdminCatalogAuthorsRoute
   AdminCatalogBoardsRoute: typeof AdminCatalogBoardsRoute
   AdminCatalogBrandsRoute: typeof AdminCatalogBrandsRoute
@@ -2111,6 +2170,7 @@ interface AdminRouteChildren {
   AdminSettingsLogsRoute: typeof AdminSettingsLogsRoute
   AdminSettingsMaintenanceRoute: typeof AdminSettingsMaintenanceRoute
   AdminSettingsNotificationsRoute: typeof AdminSettingsNotificationsRoute
+  AdminSettingsPagesRoute: typeof AdminSettingsPagesRoute
   AdminSettingsPaymentsRoute: typeof AdminSettingsPaymentsRoute
   AdminSettingsShippingRoute: typeof AdminSettingsShippingRoute
   AdminSettingsSmsRoute: typeof AdminSettingsSmsRoute
@@ -2149,7 +2209,9 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminBooksBulkUpdateRoute: AdminBooksBulkUpdateRoute,
   AdminBooksBulkUploadRoute: AdminBooksBulkUploadRoute,
   AdminBooksImportExportRoute: AdminBooksImportExportRoute,
+  AdminBunchExchangesRoute: AdminBunchExchangesRoute,
   AdminBunchOrdersRoute: AdminBunchOrdersRoute,
+  AdminBunchReturnsRoute: AdminBunchReturnsRoute,
   AdminCatalogAuthorsRoute: AdminCatalogAuthorsRoute,
   AdminCatalogBoardsRoute: AdminCatalogBoardsRoute,
   AdminCatalogBrandsRoute: AdminCatalogBrandsRoute,
@@ -2210,6 +2272,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminSettingsLogsRoute: AdminSettingsLogsRoute,
   AdminSettingsMaintenanceRoute: AdminSettingsMaintenanceRoute,
   AdminSettingsNotificationsRoute: AdminSettingsNotificationsRoute,
+  AdminSettingsPagesRoute: AdminSettingsPagesRoute,
   AdminSettingsPaymentsRoute: AdminSettingsPaymentsRoute,
   AdminSettingsShippingRoute: AdminSettingsShippingRoute,
   AdminSettingsSmsRoute: AdminSettingsSmsRoute,

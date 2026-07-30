@@ -1,6 +1,9 @@
+import { useState, useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { SettingsShell, Section, Field, TextInput, TextArea, Select, Badge } from "@/components/admin/SettingsShell";
+import { settingsService, type Setting } from "@/services/settings.service";
 import { Building2, MapPin } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_admin/settings/company")({
   component: CompanySettings,
@@ -8,37 +11,168 @@ export const Route = createFileRoute("/_admin/settings/company")({
 });
 
 function CompanySettings() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [setting, setSetting] = useState<Setting | null>(null);
+
+  const [formData, setFormData] = useState({
+    companyName: "",
+    companyAddress: "",
+    companyCity: "",
+    companyPhone: "",
+    companyGstin: "",
+    email: "",
+    clinicAddress: "",
+  });
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
+
+  const loadSettings = async () => {
+    try {
+      setLoading(true);
+      const response = await settingsService.getAll({ limit: 1 });
+      if (response.data?.length > 0) {
+        const settingData = response.data[0];
+        setSetting(settingData);
+        setFormData({
+          companyName: settingData.companyName || "",
+          companyAddress: settingData.companyAddress || "",
+          companyCity: settingData.companyCity || "",
+          companyPhone: settingData.companyPhone || "",
+          companyGstin: settingData.companyGstin || "",
+          email: settingData.email || "",
+          clinicAddress: settingData.clinicAddress || "",
+        });
+      }
+    } catch (error) {
+      console.error("Failed to load settings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const dataToSave = Object.fromEntries(
+        Object.entries(formData).filter(([_, value]) => value !== "")
+      );
+
+      if (setting?.id) {
+        await settingsService.update(setting.id, dataToSave);
+        toast.success("Company settings saved successfully");
+      } else {
+        // Create with default title if no setting exists
+        const newSetting = await settingsService.create({ 
+          title: "Default Settings",
+          ...dataToSave 
+        });
+        setSetting(newSetting);
+        toast.success("Company settings created successfully");
+      }
+      await loadSettings();
+    } catch (error: any) {
+      console.error("Failed to save settings:", error);
+      const msg = error?.response?.data?.data?.errors?.[0] || error?.response?.data?.message || "Failed to save settings";
+      toast.error(msg);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateField = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  if (loading) {
+    return (
+      <SettingsShell
+        title="Company"
+        description="Legal entity, registered address and compliance identifiers used on invoices and shipping labels."
+      >
+        <div className="flex items-center justify-center py-10">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+        </div>
+      </SettingsShell>
+    );
+  }
+
   return (
     <SettingsShell
       title="Company"
       description="Legal entity, registered address and compliance identifiers used on invoices and shipping labels."
+      actions={
+        <>
+          <button 
+            className="h-8 rounded-md border border-[#E5E7EB] bg-white px-3 text-[12px] font-medium text-[#374151] hover:bg-[#F9FAFB]"
+            onClick={loadSettings}
+            disabled={saving}
+          >
+            Discard
+          </button>
+          <button 
+            className="h-8 rounded-md bg-[#111827] px-3 text-[12px] font-medium text-white hover:bg-[#1F2937] disabled:opacity50"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? "Saving..." : "Save changes"}
+          </button>
+        </>
+      }
     >
       <Section title="Legal entity" description="Appears on every tax invoice and courier manifest.">
         <Field label="Legal name">
-          <TextInput defaultValue="Sapna Book House Pvt. Ltd." />
+          <TextInput 
+            value={formData.companyName} 
+            onChange={(e) => updateField("companyName", e.target.value)}
+            placeholder="Company Legal Name" 
+          />
         </Field>
-        <Field label="Brand / trading name" cols={2}>
-          <TextInput defaultValue="Sapna Books" />
-          <Select defaultValue="pvt">
-            <option value="prop">Sole proprietorship</option>
-            <option value="llp">LLP</option>
-            <option value="pvt">Private Limited</option>
-            <option value="ltd">Public Limited</option>
-          </Select>
+        <Field label="Email" cols={1}>
+          <TextInput 
+            type="email"
+            value={formData.email} 
+            onChange={(e) => updateField("email", e.target.value)}
+            placeholder="company@example.com" 
+          />
         </Field>
-        <Field label="PAN / CIN" cols={2}>
-          <TextInput defaultValue="AAACS1234K" placeholder="PAN" />
-          <TextInput defaultValue="U22110KA1998PTC023456" placeholder="CIN" />
+        <Field label="GSTIN">
+          <TextInput 
+            value={formData.companyGstin} 
+            onChange={(e) => updateField("companyGstin", e.target.value)}
+            placeholder="27AABCU9603R1ZM" 
+          />
+        </Field>
+        <Field label="Phone">
+          <TextInput 
+            value={formData.companyPhone} 
+            onChange={(e) => updateField("companyPhone", e.target.value)}
+            placeholder="+91 9876543210" 
+          />
         </Field>
       </Section>
 
       <Section title="Registered address" description="Head office address printed on legal documents.">
         <Field label="Street">
-          <TextArea defaultValue="No. 3, Gandhi Nagar, Sadar Patrappa Road" />
+          <TextArea 
+            value={formData.companyAddress} 
+            onChange={(e) => updateField("companyAddress", e.target.value)}
+            placeholder="Street address" 
+          />
         </Field>
         <Field label="City / State / PIN" cols={2}>
-          <TextInput defaultValue="Bengaluru" />
-          <TextInput defaultValue="Karnataka — 560002" />
+          <TextInput 
+            value={formData.companyCity} 
+            onChange={(e) => updateField("companyCity", e.target.value)}
+            placeholder="City" 
+          />
+          <TextInput 
+            value={formData.clinicAddress} 
+            onChange={(e) => updateField("clinicAddress", e.target.value)}
+            placeholder="State — PIN" 
+          />
         </Field>
       </Section>
 

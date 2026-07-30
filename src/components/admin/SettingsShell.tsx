@@ -11,19 +11,7 @@ export type SettingsNavItem = { label: string; to: string; icon: LucideIcon; des
 
 export const SETTINGS_NAV: SettingsNavItem[] = [
   { label: "General", to: "/settings/general", icon: Settings2, desc: "Site name, timezone, defaults" },
-  { label: "Store", to: "/settings/store", icon: Store, desc: "Storefront, checkout, catalog" },
-  { label: "Company", to: "/settings/company", icon: Building2, desc: "Legal entity, addresses, PAN" },
-  { label: "GST", to: "/settings/gst", icon: Receipt, desc: "GSTIN, HSN defaults, invoice series" },
-  { label: "Payments", to: "/settings/payments", icon: CreditCard, desc: "Gateways, COD, refund policy" },
-  { label: "Shipping", to: "/settings/shipping", icon: Truck, desc: "Carriers, zones, packaging" },
-  { label: "Email", to: "/settings/email", icon: Mail, desc: "SMTP, from address, DKIM" },
-  { label: "SMS", to: "/settings/sms", icon: MessageSquare, desc: "Provider, sender ID, DLT" },
-  { label: "Notifications", to: "/settings/notifications", icon: Bell, desc: "Events, channels, digests" },
-  { label: "Currency", to: "/settings/currency", icon: DollarSign, desc: "Base currency, rounding, FX" },
-  { label: "Theme", to: "/settings/theme", icon: Palette, desc: "Brand, colors, typography" },
-  { label: "Backup", to: "/settings/backup", icon: DatabaseBackup, desc: "Schedule, retention, restore" },
-  { label: "Maintenance", to: "/settings/maintenance", icon: Wrench, desc: "Downtime, banners, allowlist" },
-  { label: "System Logs", to: "/settings/logs", icon: ScrollText, desc: "Audit trail, exports" },
+  
 ];
 
 export function SettingsShell({

@@ -15,6 +15,10 @@ export interface BookInsiderImage {
 }
 
 export interface BookItem {
+  averageRating: string;
+  totalRatings: number;
+  updatedAt: string | number | Date;
+  class: any;
   id: string;
   title: string;
   isbn: string;
@@ -88,25 +92,41 @@ export interface CreateBookPayload {
   status?: string;
 }
 
+// Fix: Return r.data.data for single items (unwrap one level deeper)
+const wrapSingle = (r: any) => r.data?.data ?? r.data;
+
+// Fix: For paginated responses, return the inner data object
+const wrapPaginated = (r: any) => {
+  const data = r.data?.data;
+  return {
+    data: data?.data ?? [],
+    total: data?.total ?? 0,
+    page: data?.page ?? 1,
+    limit: data?.limit ?? 10
+  };
+};
+
+// For operations that return a success message
 const wrap = (r: any) => r.data;
 
 export const booksService = {
-  getAll: (params: BooksQuery = {}) => api.get("/books", { params }).then(wrap),
-  getById: (id: string) => api.get(`/books/${id}`).then(wrap),
-  create: (data: CreateBookPayload) => api.post("/books", data).then(wrap),
-  update: (id: string, data: Partial<CreateBookPayload>) => api.patch(`/books/${id}`, data).then(wrap),
+  getAll: (params: BooksQuery = {}) => api.get("/books", { params }).then(wrapPaginated),
+  findOne: (id: string) => api.get(`/books/${id}`).then(wrapSingle),
+  create: (data: CreateBookPayload) => api.post("/books", data).then(wrapSingle),
+  update: (id: string, data: Partial<CreateBookPayload>) => api.patch(`/books/${id}`, data).then(wrapSingle),
   updateStatus: (id: string, status: string) => api.patch(`/books/status/${id}`, { status }).then(wrap),
-  toggleStaffPick: (id: string, isStaffPick: boolean) => api.patch(`/books/${id}`, { isStaffPick }).then(wrap),
+  toggleStaffPick: (id: string, isStaffPick: boolean) => api.patch(`/books/${id}`, { isStaffPick }).then(wrapSingle),
   uploadCover: (id: string, file: File) => {
     const fd = new FormData(); fd.append("file", file);
-    return api.put(`/books/cover/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } }).then(wrap);
+    return api.put(`/books/cover/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } }).then(wrapSingle);
   },
   uploadInsiderImages: (id: string, files: File[]) => {
     const fd = new FormData();
     files.forEach((file) => fd.append("files", file));
-    return api.put(`/books/insider-images/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } }).then(wrap);
+    return api.put(`/books/insider-images/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } }).then(wrapSingle);
   },
   delete: (id: string) => api.delete(`/books/${id}`).then(wrap),
+  getBook: (id: string) => api.get(`/books/${id}`).then(wrapSingle), // Alias for findOne
 };
 
 const logDrop = (key: string, raw: any, result: any[]) => {

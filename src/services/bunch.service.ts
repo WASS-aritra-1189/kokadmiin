@@ -56,6 +56,7 @@ export interface Bunch {
   languageId: string;
   totalAmount: number;
   quantity: number;
+  allowPartialBuy: boolean;
   status: string;
   class?: { id: string; name: string; board?: { id: string; name: string } } | null;
   language?: { id: string; name: string } | null;
@@ -104,6 +105,7 @@ export const bunchService = {
     bookIds: string[];
     totalAmount: number;
     quantity: number;
+    allowPartialBuy: boolean;
     description?: string;
     status?: string;
   }) => api.post("/bunches", data).then(wrap),

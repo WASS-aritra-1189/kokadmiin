@@ -111,6 +111,7 @@ function Page() {
                 <th className="px-4 py-2 text-left">Schools</th>
                 <th className="px-4 py-2 text-left">Books</th>
                 <th className="px-4 py-2 text-right">Amount</th>
+                <th className="px-4 py-2 text-center">Partial</th>
                 <th className="px-4 py-2 text-left">Status</th>
                 <th className="px-4 py-2 text-left">Created</th>
                 <th className="px-4 py-2" />
@@ -127,6 +128,11 @@ function Page() {
                   <td className="px-4 py-2.5 text-[#6B7280]">{item.schools?.length ?? 0}</td>
                   <td className="px-4 py-2.5 text-[#6B7280]">{item.books?.length ?? 0}</td>
                   <td className="px-4 py-2.5 text-right tabular-nums">₹{Number(item.totalAmount).toFixed(2)}</td>
+                  <td className="px-4 py-2.5 text-center">
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${item.allowPartialBuy ? 'bg-[#DBEAFE] text-[#1D4ED8]' : 'bg-[#F3F4F6] text-[#6B7280]'}`}>
+                      {item.allowPartialBuy ? 'Yes' : 'No'}
+                    </span>
+                  </td>
                   <td className="px-4 py-2.5">
                     <button
                       onClick={() => handleStatusToggle(item)}
@@ -273,6 +279,16 @@ function BunchDetailView({ bunch, onClose, loading }: { bunch: Bunch; onClose: (
               <span className="text-[#6B7280]">Quantity:</span>
               <div className="font-medium">{bunch.quantity}</div>
             </div>
+            <div>
+              <span className="text-[#6B7280]">Partial Buy:</span>
+              <div>
+                <span className={"inline-block rounded-full px-2 py-0.5 text-[11px] font-medium " + 
+                  (bunch.allowPartialBuy ? "bg-[#DBEAFE] text-[#1D4ED8]" : "bg-[#F3F4F6] text-[#6B7280]")
+                }>
+                  {bunch.allowPartialBuy ? "Allowed" : "Not Allowed"}
+                </span>
+              </div>
+            </div>
             {bunch.description && (
               <div className="col-span-2">
                 <span className="text-[#6B7280]">Description:</span>
@@ -364,6 +380,7 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
     languageId: item?.languageId ?? "",
     totalAmount: item?.totalAmount ?? 0,
     quantity: item?.quantity ?? 0,
+    allowPartialBuy: item?.allowPartialBuy ?? false,
     // limit: item?.limit ?? null,
     status: item?.status ?? "ACTIVE",
     schoolIds: item?.schools?.map(s => s.id) ?? [] as string[],
@@ -473,6 +490,7 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
           classId: form.classId,
           languageId: form.languageId,
           totalAmount: Number(form.totalAmount),
+          allowPartialBuy: form.allowPartialBuy,
           // limit: form.limit,
           status: form.status,
           schoolIds: form.schoolIds,
@@ -486,6 +504,7 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
           languageId: form.languageId,
           totalAmount: Number(form.totalAmount),
           quantity: Number(form.quantity),
+          allowPartialBuy: form.allowPartialBuy,
           // limit: form.limit,
           schoolIds: form.schoolIds,
           bookIds: form.bookIds,
@@ -544,6 +563,19 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
                 <input required type="number" min="0" value={form.quantity} onChange={(e) => setForm(f => ({ ...f, quantity: e.target.value as any }))} className={inp} />
               </div>
               
+              <div className="col-span-2">
+                <label className="mb-2 flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={form.allowPartialBuy}
+                    onChange={(e) => setForm(f => ({ ...f, allowPartialBuy: e.target.checked }))}
+                    className="h-4 w-4 rounded border-[#E5E7EB] text-[#4F46E5] focus:ring-[#4F46E5]"
+                  />
+                  <span className="text-[12px] font-medium text-[#374151]">Allow partial buy</span>
+                </label>
+                <p className="mt-1 text-[10px] text-[#6B7280] ml-6">Users can buy individual books from this bunch</p>
+              </div>
+
               <div>
                 <label className="mb-1 block text-[11px] font-medium text-[#374151]">Status</label>
                 <select value={form.status} onChange={(e) => setForm(f => ({ ...f, status: e.target.value }))} className={inp}>

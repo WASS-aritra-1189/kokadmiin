@@ -454,7 +454,7 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
   }, [bookSearch]);
 
   useEffect(() => {
-    schoolService.getActive().then((r) => setSchools(r.data ?? []));
+    schoolService.getActive().then((r) => setSchools(r ?? []));
     api.get("/languages/active").then((r) => setLanguages((r.data as any)?.data ?? []));
     loadBooks(1, false);
     api.get("/school-classes", { params: { limit: 100 } }).then((r) => setClasses((r.data as any)?.data?.data ?? []));

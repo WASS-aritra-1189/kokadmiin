@@ -24,6 +24,7 @@ export const NAV: NavGroup[] = [
     items: [
       { label: "Bunches", to: "/bunch" },
       { label: "Bunch Orders", to: "/bunch/orders" },
+      { label: "Bunch Order Analysis", to: "/bunch/order-analysis" },
       { label: "Returns", to: "/bunch/returns" },
       { label: "Exchanges", to: "/bunch/exchanges" },
     ],

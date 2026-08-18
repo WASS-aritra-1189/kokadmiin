@@ -50,4 +50,26 @@ export const dashboardService = {
 
   getInventoryStatus: () => 
     api.get("/dashboard/inventory-status").then(wrap),
+
+  // Bunch Order Analytics APIs
+  getBunchSalesOverview: (params?: { filter?: string; startDate?: string; endDate?: string }) =>
+    api.get("/dashboard/bunch-sales-overview", { params }).then(wrap),
+
+  getBunchRevenueTrend: (params?: { groupBy?: string; startDate?: string; endDate?: string }) =>
+    api.get("/dashboard/bunch-sales-revenue-trend", { params }).then(wrap),
+
+  getBunchSalesByPaymentMethod: (params?: { groupBy?: string; startDate?: string; endDate?: string }) =>
+    api.get("/dashboard/bunch-sales-by-payment-method", { params }).then(wrap),
+
+  getBunchSalesByLocation: (params?: { groupBy?: string; startDate?: string; endDate?: string }) =>
+    api.get("/dashboard/bunch-sales-by-location", { params }).then(wrap),
+
+  getBunchOrderAnalytics: (params?: { groupBy?: string; startDate?: string; endDate?: string }) =>
+    api.get("/dashboard/bunch-order-analytics", { params }).then(wrap),
+
+  getBunchOrderStatusDistribution: (params?: { groupBy?: string; startDate?: string; endDate?: string }) =>
+    api.get("/dashboard/bunch-order-status-distribution", { params }).then(wrap),
+
+  getBunchOrdersOverTime: (params?: { groupBy?: string; startDate?: string; endDate?: string }) =>
+    api.get("/dashboard/bunch-orders-over-time", { params }).then(wrap),
 };

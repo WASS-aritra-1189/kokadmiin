@@ -111,6 +111,7 @@ import { Route as AdminCatalogBoardsRouteImport } from './routes/_admin.catalog.
 import { Route as AdminCatalogAuthorsRouteImport } from './routes/_admin.catalog.authors'
 import { Route as AdminBunchReturnsRouteImport } from './routes/_admin.bunch.returns'
 import { Route as AdminBunchOrdersRouteImport } from './routes/_admin.bunch.orders'
+import { Route as AdminBunchOrderAnalysisRouteImport } from './routes/_admin.bunch.order-analysis'
 import { Route as AdminBunchExchangesRouteImport } from './routes/_admin.bunch.exchanges'
 import { Route as AdminBooksImportExportRouteImport } from './routes/_admin.books.import-export'
 import { Route as AdminBooksBulkUploadRouteImport } from './routes/_admin.books.bulk-upload'
@@ -643,6 +644,11 @@ const AdminBunchOrdersRoute = AdminBunchOrdersRouteImport.update({
   path: '/bunch/orders',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminBunchOrderAnalysisRoute = AdminBunchOrderAnalysisRouteImport.update({
+  id: '/bunch/order-analysis',
+  path: '/bunch/order-analysis',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminBunchExchangesRoute = AdminBunchExchangesRouteImport.update({
   id: '/bunch/exchanges',
   path: '/bunch/exchanges',
@@ -680,6 +686,7 @@ export interface FileRoutesByFullPath {
   '/books/bulk-upload': typeof AdminBooksBulkUploadRoute
   '/books/import-export': typeof AdminBooksImportExportRoute
   '/bunch/exchanges': typeof AdminBunchExchangesRoute
+  '/bunch/order-analysis': typeof AdminBunchOrderAnalysisRoute
   '/bunch/orders': typeof AdminBunchOrdersRoute
   '/bunch/returns': typeof AdminBunchReturnsRoute
   '/catalog/authors': typeof AdminCatalogAuthorsRoute
@@ -787,6 +794,7 @@ export interface FileRoutesByTo {
   '/books/bulk-upload': typeof AdminBooksBulkUploadRoute
   '/books/import-export': typeof AdminBooksImportExportRoute
   '/bunch/exchanges': typeof AdminBunchExchangesRoute
+  '/bunch/order-analysis': typeof AdminBunchOrderAnalysisRoute
   '/bunch/orders': typeof AdminBunchOrdersRoute
   '/bunch/returns': typeof AdminBunchReturnsRoute
   '/catalog/authors': typeof AdminCatalogAuthorsRoute
@@ -897,6 +905,7 @@ export interface FileRoutesById {
   '/_admin/books/bulk-upload': typeof AdminBooksBulkUploadRoute
   '/_admin/books/import-export': typeof AdminBooksImportExportRoute
   '/_admin/bunch/exchanges': typeof AdminBunchExchangesRoute
+  '/_admin/bunch/order-analysis': typeof AdminBunchOrderAnalysisRoute
   '/_admin/bunch/orders': typeof AdminBunchOrdersRoute
   '/_admin/bunch/returns': typeof AdminBunchReturnsRoute
   '/_admin/catalog/authors': typeof AdminCatalogAuthorsRoute
@@ -1007,6 +1016,7 @@ export interface FileRouteTypes {
     | '/books/bulk-upload'
     | '/books/import-export'
     | '/bunch/exchanges'
+    | '/bunch/order-analysis'
     | '/bunch/orders'
     | '/bunch/returns'
     | '/catalog/authors'
@@ -1114,6 +1124,7 @@ export interface FileRouteTypes {
     | '/books/bulk-upload'
     | '/books/import-export'
     | '/bunch/exchanges'
+    | '/bunch/order-analysis'
     | '/bunch/orders'
     | '/bunch/returns'
     | '/catalog/authors'
@@ -1223,6 +1234,7 @@ export interface FileRouteTypes {
     | '/_admin/books/bulk-upload'
     | '/_admin/books/import-export'
     | '/_admin/bunch/exchanges'
+    | '/_admin/bunch/order-analysis'
     | '/_admin/bunch/orders'
     | '/_admin/bunch/returns'
     | '/_admin/catalog/authors'
@@ -2046,6 +2058,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBunchOrdersRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/bunch/order-analysis': {
+      id: '/_admin/bunch/order-analysis'
+      path: '/bunch/order-analysis'
+      fullPath: '/bunch/order-analysis'
+      preLoaderRoute: typeof AdminBunchOrderAnalysisRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/bunch/exchanges': {
       id: '/_admin/bunch/exchanges'
       path: '/bunch/exchanges'
@@ -2108,6 +2127,7 @@ interface AdminRouteChildren {
   AdminBooksBulkUploadRoute: typeof AdminBooksBulkUploadRoute
   AdminBooksImportExportRoute: typeof AdminBooksImportExportRoute
   AdminBunchExchangesRoute: typeof AdminBunchExchangesRoute
+  AdminBunchOrderAnalysisRoute: typeof AdminBunchOrderAnalysisRoute
   AdminBunchOrdersRoute: typeof AdminBunchOrdersRoute
   AdminBunchReturnsRoute: typeof AdminBunchReturnsRoute
   AdminCatalogAuthorsRoute: typeof AdminCatalogAuthorsRoute
@@ -2210,6 +2230,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminBooksBulkUploadRoute: AdminBooksBulkUploadRoute,
   AdminBooksImportExportRoute: AdminBooksImportExportRoute,
   AdminBunchExchangesRoute: AdminBunchExchangesRoute,
+  AdminBunchOrderAnalysisRoute: AdminBunchOrderAnalysisRoute,
   AdminBunchOrdersRoute: AdminBunchOrdersRoute,
   AdminBunchReturnsRoute: AdminBunchReturnsRoute,
   AdminCatalogAuthorsRoute: AdminCatalogAuthorsRoute,

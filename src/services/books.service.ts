@@ -68,6 +68,8 @@ export interface BooksQuery {
   limit?: number;
   search?: string;
   status?: string;
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 export interface CreateBookPayload {

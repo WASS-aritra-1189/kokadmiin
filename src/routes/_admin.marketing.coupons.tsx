@@ -13,6 +13,7 @@ function CouponsPage() {
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
+  const [changingStatusId, setChangingStatusId] = useState<string | null>(null);
   const [sheet, setSheet] = useState<{ open: boolean; item: Coupon | null }>({ open: false, item: null });
 
   const load = async (p = page, search = q) => {
@@ -34,10 +35,23 @@ function CouponsPage() {
     load();
   };
 
+  const usageCount = (coupon: Coupon) => coupon.usedCount ?? 0;
+
+  const handleStatusChange = async (coupon: Coupon) => {
+    const nextStatus = coupon.status === "ACTIVE" ? "DEACTIVE" : "ACTIVE";
+    setChangingStatusId(coupon.id);
+    try {
+      await couponService.changeStatus(coupon.id, nextStatus);
+      await load();
+    } finally {
+      setChangingStatusId(null);
+    }
+  };
+
   const now = new Date();
-  const active = items.filter(c => c.isActive && new Date(c.expiresAt) > now).length;
-  const expired = items.filter(c => new Date(c.expiresAt) <= now).length;
-  const scheduled = items.filter(c => new Date(c.startsAt) > now).length;
+  const active = items.filter(c => c.status === "ACTIVE" && new Date(c.expiresAt) > now && new Date(c.startsAt) <= now).length;
+  const expired = items.filter(c => new Date(c.expiresAt) <= now && c.status !== "DELETED").length;
+  const scheduled = items.filter(c => c.status === "ACTIVE" && new Date(c.startsAt) > now).length;
 
   return (
     <div className="p-6">
@@ -56,7 +70,7 @@ function CouponsPage() {
       </div>
 
       <div className="mt-5 grid grid-cols-4 gap-3">
-        {[["Active", active, "#10B981"], ["Scheduled", scheduled, "#F59E0B"], ["Expired", expired, "#6B7280"], ["Total redemptions", items.reduce((a, c) => a + (c.usageCount ?? 0), 0).toLocaleString("en-IN"), "#4F46E5"]].map(([l, v, t]) => (
+        {[["Active", active, "#10B981"], ["Scheduled", scheduled, "#F59E0B"], ["Expired", expired, "#6B7280"], ["Total redemptions", items.reduce((a, c) => a + usageCount(c), 0).toLocaleString("en-IN"), "#4F46E5"]].map(([l, v, t]) => (
           <div key={l} className="rounded-lg border border-[#E5E7EB] bg-white p-4">
             <div className="text-[11px] uppercase tracking-wider" style={{ color: t as string }}>{l}</div>
             <div className="mt-1 text-[22px] font-semibold tabular-nums">{v}</div>
@@ -97,9 +111,12 @@ function CouponsPage() {
               {!loading && items.length === 0 && <tr><td colSpan={8} className="px-3 py-8 text-center text-[#6B7280]">No coupons found.</td></tr>}
               {!loading && items.map((c) => {
                 const isExpired = new Date(c.expiresAt) <= now;
-                const isScheduled = new Date(c.startsAt) > now;
-                const statusLabel = isExpired ? "Expired" : isScheduled ? "Scheduled" : c.isActive ? "Active" : "Inactive";
-                const statusCls = isExpired ? "bg-[#F3F4F6] text-[#4B5563]" : isScheduled ? "bg-[#FEF3C7] text-[#92400E]" : c.isActive ? "bg-[#DCFCE7] text-[#166534]" : "bg-[#F3F4F6] text-[#4B5563]";
+                const isDeleted = c.status === "DELETED";
+                const isInactive = c.status === "DEACTIVE";
+                const isScheduled = !isExpired && new Date(c.startsAt) > now;
+                const isActive = !isDeleted && !isInactive && !isExpired;
+                const statusLabel = isDeleted ? "Deleted" : isInactive ? "Inactive" : isExpired ? "Expired" : isScheduled ? "Scheduled" : "Active";
+                const statusCls = isDeleted ? "bg-[#FEE2E2] text-[#991B1B]" : isInactive || isExpired ? "bg-[#F3F4F6] text-[#4B5563]" : isScheduled ? "bg-[#FEF3C7] text-[#92400E]" : "bg-[#DCFCE7] text-[#166534]";
                 return (
                   <tr key={c.id} className="border-b border-[#F3F4F6] last:border-0 hover:bg-[#FAFAF9]">
                     <td className="px-3 py-2"><span className="rounded-md bg-[#111827] px-2 py-0.5 font-mono text-[11px] font-medium text-white">{c.code}</span></td>
@@ -111,11 +128,11 @@ function CouponsPage() {
                         {c.totalUsageLimit ? (
                           <>
                             <div className="h-1.5 w-20 overflow-hidden rounded-full bg-[#F3F4F6]">
-                              <div className="h-full bg-[#4F46E5]" style={{ width: `${Math.min(100, ((c.usageCount ?? 0) / c.totalUsageLimit) * 100)}%` }} />
+                              <div className="h-full bg-[#4F46E5]" style={{ width: `${Math.min(100, (usageCount(c) / c.totalUsageLimit) * 100)}%` }} />
                             </div>
-                            <span className="text-[11px] tabular-nums text-[#6B7280]">{c.usageCount ?? 0} / {c.totalUsageLimit}</span>
+                            <span className="text-[11px] tabular-nums text-[#6B7280]">{usageCount(c)} / {c.totalUsageLimit}</span>
                           </>
-                        ) : <span className="text-[11px] text-[#6B7280]">{c.usageCount ?? 0} used</span>}
+                        ) : <span className="text-[11px] text-[#6B7280]">{usageCount(c)} used</span>}
                       </div>
                     </td>
                     <td className="px-3 py-2 text-[11px] text-[#4B5563]">
@@ -124,6 +141,7 @@ function CouponsPage() {
                     <td className="px-3 py-2"><span className={"rounded-full px-2 py-0.5 text-[10px] font-medium " + statusCls}>{statusLabel}</span></td>
                     <td className="px-3 py-2 text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        {!isDeleted && !isExpired && <button onClick={() => handleStatusChange(c)} disabled={changingStatusId === c.id} className={"rounded-md border px-2 py-1 text-[11px] font-medium disabled:opacity-50 " + (isActive ? "border-[#FDE68A] text-[#B45309] hover:bg-[#FFFBEB]" : "border-[#BBF7D0] text-[#15803D] hover:bg-[#F0FDF4]")}>{changingStatusId === c.id ? "Saving…" : isActive ? "Deactivate" : "Activate"}</button>}
                         <button onClick={() => setSheet({ open: true, item: c })} className="rounded-md border border-[#E5E7EB] px-2 py-1 text-[11px] font-medium text-[#374151] hover:bg-[#F9FAFB]">Edit</button>
                         <button onClick={() => handleDelete(c.id)} className="rounded-md border border-[#FEE2E2] px-2 py-1 text-[11px] font-medium text-[#EF4444] hover:bg-[#FEF2F2]">Delete</button>
                       </div>

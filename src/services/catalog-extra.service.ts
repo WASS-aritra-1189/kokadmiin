@@ -43,8 +43,8 @@ export interface Coupon {
   perUserLimit: number;
   startsAt: string;
   expiresAt: string;
-  isActive: boolean;
-  usageCount: number;
+  status: "ACTIVE" | "DEACTIVE" | "DELETED";
+  usedCount: number;
   createdAt: string;
 }
 
@@ -64,5 +64,7 @@ export const couponService = {
     perUserLimit?: number;
   }) => api.post("/coupons", data).then(wrap),
   update: (id: string, data: any) => api.patch(`/coupons/${id}`, data).then(wrap),
+  changeStatus: (id: string, status: "ACTIVE" | "DEACTIVE") =>
+    api.patch(`/coupons/status/${id}`, { status }).then(wrap),
   delete: (id: string) => api.delete(`/coupons/${id}`).then(wrap),
 };

@@ -35,6 +35,8 @@ function BooksPage() {
   const { items, total, loading, error } = useAppSelector((s) => s.books);
   const [q, setQ] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [minPrice, setMinPrice] = useState("");
+  const [maxPrice, setMaxPrice] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -48,6 +50,8 @@ function BooksPage() {
       page: p, limit: l,
       ...(search ? { search } : {}),
       ...(s !== "All" ? { status: s } : {}),
+      ...(minPrice !== "" ? { minPrice: Number(minPrice) } : {}),
+      ...(maxPrice !== "" ? { maxPrice: Number(maxPrice) } : {}),
     }));
   };
 
@@ -175,6 +179,26 @@ function BooksPage() {
             >
               {["All", "ACTIVE", "DEACTIVE", "DELETED"].map((o) => <option key={o}>{o}</option>)}
             </select>
+          </label>
+          <label className="flex items-center gap-1.5 text-[11px] text-[#6B7280]">
+            Price:
+            <input
+              type="number" min={0} placeholder="Min ₹"
+              value={minPrice} onChange={(e) => setMinPrice(e.target.value)}
+              className="h-8 w-20 rounded-md border border-[#E5E7EB] bg-white px-2 text-[12px] outline-none focus:border-[#4F46E5]"
+            />
+            <span>–</span>
+            <input
+              type="number" min={0} placeholder="Max ₹"
+              value={maxPrice} onChange={(e) => setMaxPrice(e.target.value)}
+              className="h-8 w-20 rounded-md border border-[#E5E7EB] bg-white px-2 text-[12px] outline-none focus:border-[#4F46E5]"
+            />
+            <button
+              onClick={() => { setPage(1); load(1, statusFilter, q); }}
+              className="h-8 rounded-md bg-[#111827] px-2.5 text-[11px] font-medium text-white hover:bg-[#1F2937]"
+            >
+              Apply
+            </button>
           </label>
           {selected.size > 0 && (
             <div className="ml-auto flex items-center gap-2 rounded-md bg-[#EEF2FF] px-2 py-1 text-[11px] font-medium text-[#4F46E5]">

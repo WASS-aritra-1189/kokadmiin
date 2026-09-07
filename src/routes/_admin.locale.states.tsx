@@ -18,7 +18,7 @@ function Page() {
   const [sheet, setSheet] = useState<{ open: boolean; item: State | null }>({ open: false, item: null });
 
   useEffect(() => {
-    countryService.getAll({ limit: 200 }).then((r) => setCountries(r.data?.data ?? []));
+    countryService.getAll({ limit: 500 }).then((r) => setCountries(r?.data ?? r ?? []));
   }, []);
 
   const load = async (p = page, search = q, cId = countryFilter) => {
@@ -29,8 +29,8 @@ function Page() {
         ...(search ? { search } : {}),
         ...(cId ? { countryId: cId } : {}),
       });
-      setItems(res.data?.data ?? []);
-      setTotal(res.data?.total ?? 0);
+      setItems(res?.data ?? res ?? []);
+      setTotal(res?.total ?? 0);
     } finally { setLoading(false); }
   };
 

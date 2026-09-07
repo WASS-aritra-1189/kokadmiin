@@ -93,6 +93,8 @@ import { Route as AdminDashboardOrderAnalysisRouteImport } from './routes/_admin
 import { Route as AdminCustomersWishlistRouteImport } from './routes/_admin.customers.wishlist'
 import { Route as AdminCustomersTicketsRouteImport } from './routes/_admin.customers.tickets'
 import { Route as AdminCustomersReviewsRouteImport } from './routes/_admin.customers.reviews'
+import { Route as AdminCommsTemplatesRouteImport } from './routes/_admin.comms.templates'
+import { Route as AdminCommsBroadcastsRouteImport } from './routes/_admin.comms.broadcasts'
 import { Route as AdminCmsFaqRouteImport } from './routes/_admin.cms.faq'
 import { Route as AdminCmsBlogRouteImport } from './routes/_admin.cms.blog'
 import { Route as AdminCmsBannersRouteImport } from './routes/_admin.cms.banners'
@@ -553,6 +555,16 @@ const AdminCustomersReviewsRoute = AdminCustomersReviewsRouteImport.update({
   path: '/customers/reviews',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCommsTemplatesRoute = AdminCommsTemplatesRouteImport.update({
+  id: '/comms/templates',
+  path: '/comms/templates',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCommsBroadcastsRoute = AdminCommsBroadcastsRouteImport.update({
+  id: '/comms/broadcasts',
+  path: '/comms/broadcasts',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCmsFaqRoute = AdminCmsFaqRouteImport.update({
   id: '/cms/faq',
   path: '/cms/faq',
@@ -705,6 +717,8 @@ export interface FileRoutesByFullPath {
   '/cms/banners': typeof AdminCmsBannersRoute
   '/cms/blog': typeof AdminCmsBlogRoute
   '/cms/faq': typeof AdminCmsFaqRoute
+  '/comms/broadcasts': typeof AdminCommsBroadcastsRoute
+  '/comms/templates': typeof AdminCommsTemplatesRoute
   '/customers/reviews': typeof AdminCustomersReviewsRoute
   '/customers/tickets': typeof AdminCustomersTicketsRoute
   '/customers/wishlist': typeof AdminCustomersWishlistRoute
@@ -813,6 +827,8 @@ export interface FileRoutesByTo {
   '/cms/banners': typeof AdminCmsBannersRoute
   '/cms/blog': typeof AdminCmsBlogRoute
   '/cms/faq': typeof AdminCmsFaqRoute
+  '/comms/broadcasts': typeof AdminCommsBroadcastsRoute
+  '/comms/templates': typeof AdminCommsTemplatesRoute
   '/customers/reviews': typeof AdminCustomersReviewsRoute
   '/customers/tickets': typeof AdminCustomersTicketsRoute
   '/customers/wishlist': typeof AdminCustomersWishlistRoute
@@ -924,6 +940,8 @@ export interface FileRoutesById {
   '/_admin/cms/banners': typeof AdminCmsBannersRoute
   '/_admin/cms/blog': typeof AdminCmsBlogRoute
   '/_admin/cms/faq': typeof AdminCmsFaqRoute
+  '/_admin/comms/broadcasts': typeof AdminCommsBroadcastsRoute
+  '/_admin/comms/templates': typeof AdminCommsTemplatesRoute
   '/_admin/customers/reviews': typeof AdminCustomersReviewsRoute
   '/_admin/customers/tickets': typeof AdminCustomersTicketsRoute
   '/_admin/customers/wishlist': typeof AdminCustomersWishlistRoute
@@ -1035,6 +1053,8 @@ export interface FileRouteTypes {
     | '/cms/banners'
     | '/cms/blog'
     | '/cms/faq'
+    | '/comms/broadcasts'
+    | '/comms/templates'
     | '/customers/reviews'
     | '/customers/tickets'
     | '/customers/wishlist'
@@ -1143,6 +1163,8 @@ export interface FileRouteTypes {
     | '/cms/banners'
     | '/cms/blog'
     | '/cms/faq'
+    | '/comms/broadcasts'
+    | '/comms/templates'
     | '/customers/reviews'
     | '/customers/tickets'
     | '/customers/wishlist'
@@ -1253,6 +1275,8 @@ export interface FileRouteTypes {
     | '/_admin/cms/banners'
     | '/_admin/cms/blog'
     | '/_admin/cms/faq'
+    | '/_admin/comms/broadcasts'
+    | '/_admin/comms/templates'
     | '/_admin/customers/reviews'
     | '/_admin/customers/tickets'
     | '/_admin/customers/wishlist'
@@ -1932,6 +1956,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCustomersReviewsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/comms/templates': {
+      id: '/_admin/comms/templates'
+      path: '/comms/templates'
+      fullPath: '/comms/templates'
+      preLoaderRoute: typeof AdminCommsTemplatesRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/comms/broadcasts': {
+      id: '/_admin/comms/broadcasts'
+      path: '/comms/broadcasts'
+      fullPath: '/comms/broadcasts'
+      preLoaderRoute: typeof AdminCommsBroadcastsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/cms/faq': {
       id: '/_admin/cms/faq'
       path: '/cms/faq'
@@ -2146,6 +2184,8 @@ interface AdminRouteChildren {
   AdminCmsBannersRoute: typeof AdminCmsBannersRoute
   AdminCmsBlogRoute: typeof AdminCmsBlogRoute
   AdminCmsFaqRoute: typeof AdminCmsFaqRoute
+  AdminCommsBroadcastsRoute: typeof AdminCommsBroadcastsRoute
+  AdminCommsTemplatesRoute: typeof AdminCommsTemplatesRoute
   AdminCustomersReviewsRoute: typeof AdminCustomersReviewsRoute
   AdminCustomersTicketsRoute: typeof AdminCustomersTicketsRoute
   AdminCustomersWishlistRoute: typeof AdminCustomersWishlistRoute
@@ -2249,6 +2289,8 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCmsBannersRoute: AdminCmsBannersRoute,
   AdminCmsBlogRoute: AdminCmsBlogRoute,
   AdminCmsFaqRoute: AdminCmsFaqRoute,
+  AdminCommsBroadcastsRoute: AdminCommsBroadcastsRoute,
+  AdminCommsTemplatesRoute: AdminCommsTemplatesRoute,
   AdminCustomersReviewsRoute: AdminCustomersReviewsRoute,
   AdminCustomersTicketsRoute: AdminCustomersTicketsRoute,
   AdminCustomersWishlistRoute: AdminCustomersWishlistRoute,

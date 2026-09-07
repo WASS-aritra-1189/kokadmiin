@@ -54,8 +54,8 @@ export function CatalogApiPage<T extends { id: string; status: string; createdAt
     setLoading(true);
     try {
       const res = await fetchFn({ page: p, limit: LIMIT, ...(search ? { search } : {}) });
-      setItems(res.data?.data ?? []);
-      setTotal(res.data?.total ?? 0);
+      setItems(res?.data ?? res ?? []);
+      setTotal(res?.total ?? 0);
     } finally {
       setLoading(false);
     }

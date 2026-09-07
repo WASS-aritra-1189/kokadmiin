@@ -5,12 +5,13 @@ import { cityService, stateService, countryService, type City, type State, type 
 
 export const Route = createFileRoute("/_admin/locale/cities")({ component: Page });
 
-const LIMIT = 10;
+const LIMIT_OPTIONS = [10, 25, 50, 100];
 
 function Page() {
   const [items, setItems] = useState<City[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
   const [q, setQ] = useState("");
   const [stateFilter, setStateFilter] = useState("");
   const [countryFilter, setCountryFilter] = useState("");
@@ -20,32 +21,32 @@ function Page() {
   const [sheet, setSheet] = useState<{ open: boolean; item: City | null }>({ open: false, item: null });
 
   useEffect(() => {
-    countryService.getAll({ limit: 200 }).then((r) => setCountries(r.data?.data ?? []));
+    countryService.getAll({ limit: 500 }).then((r) => setCountries(r?.data ?? r ?? []));
   }, []);
 
   useEffect(() => {
     if (!countryFilter) { setStates([]); setStateFilter(""); return; }
-    stateService.getAll({ limit: 200, countryId: countryFilter }).then((r) => setStates(r.data?.data ?? []));
+    stateService.getAll({ limit: 500, countryId: countryFilter }).then((r) => setStates(r?.data ?? r ?? []));
     setStateFilter("");
   }, [countryFilter]);
 
-  const load = async (p = page, search = q, sId = stateFilter) => {
+  const load = async (p = page, search = q, sId = stateFilter, lim = limit) => {
     setLoading(true);
     try {
       const res = await cityService.getAll({
-        page: p, limit: LIMIT,
+        page: p, limit: lim,
         ...(search ? { search } : {}),
         ...(sId ? { stateId: sId } : {}),
         ...(countryFilter && !sId ? { countryId: countryFilter } : {}),
       });
-      setItems(res.data?.data ?? []);
-      setTotal(res.data?.total ?? 0);
+      setItems(res?.data ?? res ?? []);
+      setTotal(res?.total ?? 0);
     } finally { setLoading(false); }
   };
 
-  useEffect(() => { load(); }, [page, stateFilter, countryFilter]);
+  useEffect(() => { load(); }, [page, stateFilter, countryFilter, limit]);
 
-  const totalPages = Math.max(1, Math.ceil(total / LIMIT));
+  const totalPages = Math.max(1, Math.ceil(total / limit));
 
   const handleStatusToggle = async (item: City) => {
     await cityService.changeStatus(item.id, item.status === "ACTIVE" ? "DEACTIVE" : "ACTIVE");
@@ -154,7 +155,16 @@ function Page() {
         </div>
 
         <div className="flex items-center justify-between border-t border-[#F3F4F6] px-3 py-2 text-[11px] text-[#6B7280]">
-          <div>Showing <span className="font-medium text-[#111827]">{items.length}</span> of {total}</div>
+          <div className="flex items-center gap-2">
+            <span>Showing <span className="font-medium text-[#111827]">{items.length}</span> of {total}</span>
+            <select
+              value={limit}
+              onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+              className="h-7 rounded-md border border-[#E5E7EB] bg-white px-1.5 text-[11px] outline-none"
+            >
+              {LIMIT_OPTIONS.map((o) => <option key={o} value={o}>{o} / page</option>)}
+            </select>
+          </div>
           <div className="flex items-center gap-1">
             <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="rounded-md border border-[#E5E7EB] px-2 py-1 disabled:opacity-40">Prev</button>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
@@ -188,7 +198,7 @@ function CitySheet({ item, countries, onClose, onSaved }: { item: City | null; c
 
   useEffect(() => {
     if (!countryId) { setStates([]); return; }
-    stateService.getAll({ limit: 200, countryId }).then((r) => setStates(r.data?.data ?? []));
+    stateService.getAll({ limit: 500, countryId }).then((r) => setStates(r?.data ?? r ?? []));
     if (!isEdit) setForm(f => ({ ...f, stateId: "" }));
   }, [countryId]);
 

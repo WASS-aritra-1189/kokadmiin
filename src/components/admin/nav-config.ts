@@ -106,10 +106,8 @@ export const NAV: NavGroup[] = [
   {
     label: "Communication", icon: MessagesSquare,
     items: [
-      { label: "Email Templates", to: "/comms/email-templates" },
-      { label: "SMS Templates", to: "/comms/sms-templates" },
-      { label: "WhatsApp Templates", to: "/comms/whatsapp-templates" },
-      { label: "Push Notifications", to: "/comms/push" },
+      { label: "Templates", to: "/comms/templates" },
+      { label: "Broadcasts", to: "/comms/broadcasts" },
     ],
   },
   {

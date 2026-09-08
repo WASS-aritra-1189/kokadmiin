@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { productCategoryService, type ProductCategory, type ProductCategoryPayload } from "@/services/product-category.service";
 
 export const Route = createFileRoute("/_admin/catalog/categories")({ component: Page });
@@ -14,6 +15,8 @@ function Page() {
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
   const [sheet, setSheet] = useState<{ open: boolean; item: ProductCategory | null }>({ open: false, item: null });
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async (p = page, search = q) => {
     setLoading(true);
@@ -37,8 +40,10 @@ function Page() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this category?")) return;
+    setDeleting(true);
     await productCategoryService.delete(id);
+    setDeleting(false);
+    setConfirmId(null);
     load();
   };
 
@@ -122,7 +127,7 @@ function Page() {
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => setConfirmId(item.id)}
                         className="rounded-md border border-[#FEE2E2] px-2 py-1 text-[11px] font-medium text-[#EF4444] hover:bg-[#FEF2F2]"
                       >
                         Delete
@@ -147,6 +152,15 @@ function Page() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={!!confirmId}
+        title="Delete category"
+        description="This action cannot be undone."
+        loading={deleting}
+        onConfirm={() => confirmId && handleDelete(confirmId)}
+        onCancel={() => setConfirmId(null)}
+      />
 
       {sheet.open && (
         <CategorySheet

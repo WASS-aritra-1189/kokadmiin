@@ -54,8 +54,10 @@ export function CatalogApiPage<T extends { id: string; status: string; createdAt
     setLoading(true);
     try {
       const res = await fetchFn({ page: p, limit: LIMIT, ...(search ? { search } : {}) });
-      setItems(res?.data ?? res ?? []);
-      setTotal(res?.total ?? 0);
+      // Handle both { data: [], total } and { data: { data: [], total } } shapes
+      const inner = Array.isArray(res?.data) ? res : (res?.data ?? res);
+      setItems(Array.isArray(inner?.data) ? inner.data : (Array.isArray(inner) ? inner : []));
+      setTotal(inner?.total ?? res?.total ?? 0);
     } finally {
       setLoading(false);
     }

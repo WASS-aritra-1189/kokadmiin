@@ -30,8 +30,8 @@ function Page() {
         ...(search ? { search } : {}),
         ...(bId ? { boardId: bId } : {}),
       });
-      setItems(res.data?.data ?? []);
-      setTotal(res.data?.total ?? 0);
+      setItems(res.data ?? []);
+      setTotal(res.total ?? 0);
     } finally { setLoading(false); }
   };
 

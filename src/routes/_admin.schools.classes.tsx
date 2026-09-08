@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
 import { schoolClassService, type SchoolClass } from "@/services/school.service";
 import { boardService, type Board } from "@/services/board.service";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export const Route = createFileRoute("/_admin/schools/classes")({ component: Page });
 
@@ -17,6 +18,8 @@ function Page() {
   const [boards, setBoards] = useState<Board[]>([]);
   const [loading, setLoading] = useState(false);
   const [sheet, setSheet] = useState<{ open: boolean; item: SchoolClass | null }>({ open: false, item: null });
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     boardService.getActive().then((r) => setBoards(r.data ?? []));
@@ -45,9 +48,14 @@ function Page() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this class?")) return;
-    await schoolClassService.delete(id);
-    load();
+    setDeleting(true);
+    try {
+      await schoolClassService.delete(id);
+      load();
+    } finally {
+      setDeleting(false);
+      setConfirmId(null);
+    }
   };
 
   return (
@@ -127,7 +135,7 @@ function Page() {
                   <td className="px-4 py-2.5 text-right">
                     <div className="flex items-center justify-end gap-1.5">
                       <button onClick={() => setSheet({ open: true, item })} className="rounded-md border border-[#E5E7EB] px-2 py-1 text-[11px] font-medium text-[#374151] hover:bg-[#F9FAFB]">Edit</button>
-                      <button onClick={() => handleDelete(item.id)} className="rounded-md border border-[#FEE2E2] px-2 py-1 text-[11px] font-medium text-[#EF4444] hover:bg-[#FEF2F2]">Delete</button>
+                      <button onClick={() => setConfirmId(item.id)} className="rounded-md border border-[#FEE2E2] px-2 py-1 text-[11px] font-medium text-[#EF4444] hover:bg-[#FEF2F2]">Delete</button>
                     </div>
                   </td>
                 </tr>
@@ -156,6 +164,15 @@ function Page() {
           onSaved={() => { setSheet({ open: false, item: null }); load(); }}
         />
       )}
+
+      <ConfirmDialog
+        open={!!confirmId}
+        title="Delete class?"
+        description="This action cannot be undone."
+        loading={deleting}
+        onConfirm={() => confirmId && handleDelete(confirmId)}
+        onCancel={() => setConfirmId(null)}
+      />
     </div>
   );
 }

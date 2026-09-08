@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Plus, Search, Upload, X } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 const LIMIT = 10;
 
@@ -49,6 +50,8 @@ export function CatalogApiPage<T extends { id: string; status: string; createdAt
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
   const [sheet, setSheet] = useState<{ open: boolean; item: T | null }>({ open: false, item: null });
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async (p = page, search = q) => {
     setLoading(true);
@@ -74,9 +77,14 @@ export function CatalogApiPage<T extends { id: string; status: string; createdAt
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm(`Delete this ${title.replace(/s$/, "").toLowerCase()}?`)) return;
-    await deleteFn(id);
-    load();
+    setDeleting(true);
+    try {
+      await deleteFn(id);
+      load();
+    } finally {
+      setDeleting(false);
+      setConfirmId(null);
+    }
   };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -188,7 +196,7 @@ export function CatalogApiPage<T extends { id: string; status: string; createdAt
                         Edit
                       </button>
                       <button
-                        onClick={() => handleDelete(item.id)}
+                        onClick={() => setConfirmId(item.id)}
                         className="rounded-md border border-[#FEE2E2] px-2 py-1 text-[11px] font-medium text-[#EF4444] hover:bg-[#FEF2F2]"
                       >
                         Delete
@@ -230,6 +238,15 @@ export function CatalogApiPage<T extends { id: string; status: string; createdAt
         />
       )}
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" />
+
+      <ConfirmDialog
+        open={!!confirmId}
+        title={`Delete ${title.replace(/s$/, "").toLowerCase()}?`}
+        description="This action cannot be undone."
+        loading={deleting}
+        onConfirm={() => confirmId && handleDelete(confirmId)}
+        onCancel={() => setConfirmId(null)}
+      />
     </div>
   );
 }

@@ -15,6 +15,7 @@ import {
   Calendar
 } from "lucide-react";
 import { schoolService, type School } from "@/services/school.service";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export const Route = createFileRoute("/_admin/schools/")({
   component: SchoolsPage,
@@ -38,6 +39,8 @@ function SchoolsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [viewSchool, setViewSchool] = useState<School | null>(null);
   const [viewLoading, setViewLoading] = useState(false);
+  const [confirmSchool, setConfirmSchool] = useState<School | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     loadSchools();
@@ -86,12 +89,15 @@ function SchoolsPage() {
   };
 
   const handleDelete = async (school: School) => {
-    if (!confirm(`Are you sure you want to delete "${school.name}"?`)) return;
+    setDeleting(true);
     try {
       await schoolService.delete(school.id);
       loadSchools();
     } catch (err: any) {
       alert(err.response?.data?.message || "Failed to delete school");
+    } finally {
+      setDeleting(false);
+      setConfirmSchool(null);
     }
   };
 
@@ -227,7 +233,7 @@ function SchoolsPage() {
                         Edit
                       </Link>
                       <button
-                        onClick={() => handleDelete(school)}
+                        onClick={() => setConfirmSchool(school)}
                         className="rounded-md border border-[#E5E7EB] px-2 py-1 text-[11px] font-medium text-[#EF4444] hover:bg-[#FEF2F2]"
                       >
                         Delete
@@ -428,6 +434,15 @@ function SchoolsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmSchool}
+        title={`Delete "${confirmSchool?.name}"?`}
+        description="This action cannot be undone."
+        loading={deleting}
+        onConfirm={() => confirmSchool && handleDelete(confirmSchool)}
+        onCancel={() => setConfirmSchool(null)}
+      />
     </div>
   );
 }

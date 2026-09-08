@@ -4,6 +4,7 @@ import { Plus, Search, X, Eye } from "lucide-react";
 import { bunchService, type Bunch } from "@/services/bunch.service";
 import { schoolService } from "@/services/school.service";
 import { api } from "@/lib/axios";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 export const Route = createFileRoute("/_admin/bunch/")({ component: Page });
 
@@ -19,6 +20,8 @@ function Page() {
   const [sheet, setSheet] = useState<{ open: boolean; item: Bunch | null }>({ open: false, item: null });
   const [viewItem, setViewItem] = useState<Bunch | null>(null);
   const [viewLoading, setViewLoading] = useState(false);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async (p = page, search = q, l = limit) => {
     setLoading(true);
@@ -57,9 +60,14 @@ function Page() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this bunch?")) return;
-    await bunchService.delete(id);
-    load();
+    setDeleting(true);
+    try {
+      await bunchService.delete(id);
+      load();
+    } finally {
+      setDeleting(false);
+      setConfirmId(null);
+    }
   };
 
   return (
@@ -156,7 +164,7 @@ function Page() {
                         Edit
                       </button>
                       <button 
-                        onClick={() => handleDelete(item.id)} 
+                        onClick={() => setConfirmId(item.id)} 
                         className="rounded-md border border-[#FEE2E2] px-2 py-1 text-[11px] font-medium text-[#EF4444] hover:bg-[#FEF2F2]"
                       >
                         Delete
@@ -209,6 +217,15 @@ function Page() {
           loading={viewLoading}
         />
       )}
+
+      <ConfirmDialog
+        open={!!confirmId}
+        title="Delete bunch?"
+        description="This action cannot be undone."
+        loading={deleting}
+        onConfirm={() => confirmId && handleDelete(confirmId)}
+        onCancel={() => setConfirmId(null)}
+      />
     </div>
   );
 }

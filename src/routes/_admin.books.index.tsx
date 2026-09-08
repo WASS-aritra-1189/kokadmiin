@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { fetchBooks, createBook, updateBook, deleteBook, deleteMultipleBooks } from "@/store/slices/booksSlice";
 import { catalogApi, booksService, type BookItem, type CreateBookPayload, type DropdownItem, type BookLanguage, type BookClass, type BookSubject, type BookInsiderImage } from "@/services/books.service";
 import { exportToPDF, exportToExcel } from "@/lib/export";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +45,9 @@ function BooksPage() {
   const [statusChange, setStatusChange] = useState<{ open: boolean; book: BookItem | null; newStatus: string }>({ open: false, book: null, newStatus: "" });
   const [viewBook, setViewBook] = useState<BookItem | null>(null);
   const [viewLoading, setViewLoading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; title: string } | null>(null);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const load = (p = page, s = statusFilter, search = q, l = limit) => {
     dispatch(fetchBooks({
@@ -204,12 +208,7 @@ function BooksPage() {
             <div className="ml-auto flex items-center gap-2 rounded-md bg-[#EEF2FF] px-2 py-1 text-[11px] font-medium text-[#4F46E5]">
               {selected.size} selected
               <button 
-                onClick={async () => {
-                  if (!confirm(`Delete ${selected.size} book(s)?`)) return;
-                  await dispatch(deleteMultipleBooks(Array.from(selected)));
-                  setSelected(new Set());
-                  load();
-                }} 
+                onClick={() => setConfirmBulkDelete(true)}
                 className="rounded-md bg-white px-2 py-0.5 text-[10px] text-[#EF4444]"
               >
                 Delete
@@ -312,11 +311,7 @@ function BooksPage() {
                         Edit
                       </button>
                       <button
-                        onClick={async () => {
-                          if (!confirm(`Delete "${b.title}"?`)) return;
-                          await dispatch(deleteBook(b.id));
-                          load();
-                        }}
+                        onClick={() => setConfirmDelete({ id: b.id, title: b.title })}
                         className="rounded-md border border-[#E5E7EB] px-2 py-1 text-[11px] font-medium text-[#EF4444] hover:bg-[#FEF2F2]"
                       >
                         Delete
@@ -397,6 +392,33 @@ function BooksPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title={`Delete "${confirmDelete?.title}"?`}
+        description="This action cannot be undone."
+        loading={deleting}
+        onConfirm={async () => {
+          if (!confirmDelete) return;
+          setDeleting(true);
+          try { await dispatch(deleteBook(confirmDelete.id)); load(); }
+          finally { setDeleting(false); setConfirmDelete(null); }
+        }}
+        onCancel={() => setConfirmDelete(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmBulkDelete}
+        title={`Delete ${selected.size} book(s)?`}
+        description="This action cannot be undone."
+        loading={deleting}
+        onConfirm={async () => {
+          setDeleting(true);
+          try { await dispatch(deleteMultipleBooks(Array.from(selected))); setSelected(new Set()); load(); }
+          finally { setDeleting(false); setConfirmBulkDelete(false); }
+        }}
+        onCancel={() => setConfirmBulkDelete(false)}
+      />
     </div>
   );
 }

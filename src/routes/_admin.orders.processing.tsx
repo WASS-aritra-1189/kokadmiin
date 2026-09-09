@@ -4,6 +4,7 @@ import { Search, Truck, ExternalLink, RefreshCw } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { fetchOrders } from "@/store/slices/ordersSlice";
 import { ordersService, type Order } from "@/services/orders.service";
+import { PaginationBar } from "@/components/ui/pagination-bar";
 
 export const Route = createFileRoute("/_admin/orders/processing")({ component: ProcessingPage });
 
@@ -212,11 +213,7 @@ function ProcessingPage() {
         <div className="flex items-center justify-between border-t border-[#F3F4F6] px-3 py-2 text-[11px] text-[#6B7280]">
           <div>Showing <span className="font-medium text-[#111827]">{items.length}</span> of {total}</div>
           <div className="flex items-center gap-1">
-            <button disabled={page <= 1} onClick={() => setPage((p) => p - 1)} className="rounded-md border border-[#E5E7EB] px-2 py-1 disabled:opacity-40">Prev</button>
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className={`rounded-md px-2 py-1 ${p === page ? "bg-[#111827] text-white" : "border border-[#E5E7EB]"}`}>{p}</button>
-            ))}
-            <button disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)} className="rounded-md border border-[#E5E7EB] px-2 py-1 disabled:opacity-40">Next</button>
+            <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
           </div>
         </div>
       </div>

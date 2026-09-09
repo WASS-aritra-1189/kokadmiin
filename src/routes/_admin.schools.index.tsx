@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { schoolService, type School } from "@/services/school.service";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { PaginationBar } from "@/components/ui/pagination-bar";
 
 export const Route = createFileRoute("/_admin/schools/")({
   component: SchoolsPage,
@@ -261,38 +262,7 @@ function SchoolsPage() {
             </label>
           </div>
           <div className="flex items-center gap-1">
-            <button 
-              disabled={page <= 1} 
-              onClick={() => setPage((p) => p - 1)} 
-              className="rounded-md border border-[#E5E7EB] px-2 py-1 disabled:opacity-40"
-            >
-              Prev
-            </button>
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
-              <button 
-                key={p} 
-                onClick={() => setPage(p)} 
-                className={"rounded-md px-2 py-1 " + (p === page ? "bg-[#111827] text-white" : "border border-[#E5E7EB]")}
-              >
-                {p}
-              </button>
-            ))}
-            {totalPages > 5 && <span>...</span>}
-            {totalPages > 5 && (
-              <button 
-                onClick={() => setPage(totalPages)} 
-                className={"rounded-md px-2 py-1 " + (totalPages === page ? "bg-[#111827] text-white" : "border border-[#E5E7EB]")}
-              >
-                {totalPages}
-              </button>
-            )}
-            <button 
-              disabled={page >= totalPages} 
-              onClick={() => setPage((p) => p + 1)} 
-              className="rounded-md border border-[#E5E7EB] px-2 py-1 disabled:opacity-40"
-            >
-              Next
-            </button>
+            <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
           </div>
         </div>
       </div>

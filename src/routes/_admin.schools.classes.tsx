@@ -4,6 +4,7 @@ import { Plus, Search, X } from "lucide-react";
 import { schoolClassService, type SchoolClass } from "@/services/school.service";
 import { boardService, type Board } from "@/services/board.service";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { PaginationBar } from "@/components/ui/pagination-bar";
 
 export const Route = createFileRoute("/_admin/schools/classes")({ component: Page });
 
@@ -147,11 +148,7 @@ function Page() {
         <div className="flex items-center justify-between border-t border-[#F3F4F6] px-3 py-2 text-[11px] text-[#6B7280]">
           <div>Showing <span className="font-medium text-[#111827]">{items.length}</span> of {total}</div>
           <div className="flex items-center gap-1">
-            <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="rounded-md border border-[#E5E7EB] px-2 py-1 disabled:opacity-40">Prev</button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className={"rounded-md px-2 py-1 " + (p === page ? "bg-[#111827] text-white" : "border border-[#E5E7EB]")}>{p}</button>
-            ))}
-            <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="rounded-md border border-[#E5E7EB] px-2 py-1 disabled:opacity-40">Next</button>
+            <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
           </div>
         </div>
       </div>

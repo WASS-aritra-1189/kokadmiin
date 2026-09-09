@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
 import { cityService, stateService, countryService, type City, type State, type Country } from "@/services/locale.service";
+import { PaginationBar } from "@/components/ui/pagination-bar";
 
 export const Route = createFileRoute("/_admin/locale/cities")({ component: Page });
 
@@ -166,11 +167,7 @@ function Page() {
             </select>
           </div>
           <div className="flex items-center gap-1">
-            <button disabled={page <= 1} onClick={() => setPage(p => p - 1)} className="rounded-md border border-[#E5E7EB] px-2 py-1 disabled:opacity-40">Prev</button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button key={p} onClick={() => setPage(p)} className={"rounded-md px-2 py-1 " + (p === page ? "bg-[#111827] text-white" : "border border-[#E5E7EB]")}>{p}</button>
-            ))}
-            <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="rounded-md border border-[#E5E7EB] px-2 py-1 disabled:opacity-40">Next</button>
+            <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
           </div>
         </div>
       </div>

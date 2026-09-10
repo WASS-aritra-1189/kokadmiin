@@ -504,6 +504,7 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
           classId: form.classId,
           languageId: form.languageId,
           totalAmount: Number(form.totalAmount),
+          quantity: Number(form.quantity),
           allowPartialBuy: form.allowPartialBuy,
           // limit: form.limit,
           status: form.status,

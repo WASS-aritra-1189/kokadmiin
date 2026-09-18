@@ -32,6 +32,8 @@ export interface ReviewsQuery {
   bookId?: string;
   status?: ReviewStatus;
   accountId?: string;
+  bookTitle?: string;
+  isbn?: string;
 }
 
 export const reviewsService = {

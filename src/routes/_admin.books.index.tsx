@@ -77,6 +77,11 @@ function BooksPage() {
 
   useEffect(() => { load(); }, [page, statusFilter, limit]);
 
+  useEffect(() => {
+    const t = setTimeout(() => { setPage(1); load(1, statusFilter, q); }, 400);
+    return () => clearTimeout(t);
+  }, [q]);
+
   // Reset to page 1 when limit changes
   useEffect(() => {
     setPage(1);
@@ -604,7 +609,6 @@ function BookDetailView({ book, onClose, loading }: BookDetailViewProps) {
             <div className="flex flex-wrap gap-6">
               <span>Created: {new Date(book.createdAt).toLocaleString()}</span>
               <span>Updated: {new Date(book.updatedAt).toLocaleString()}</span>
-              <span>ID: <span className="font-mono text-[10px]">{book.id}</span></span>
             </div>
           </div>
         </div>
@@ -850,7 +854,7 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
                 <input type="number" min={0} value={form.quantity ?? 0} onChange={(e) => set("quantity", parseInt(e.target.value) || 0)} className={input()} />
               </Field>
               <Field label="Weight (kg)">
-                <input type="number" min={0.1} step="0.1" value={form.weight ?? 0.5} onChange={(e) => set("weight", e.target.value ? parseFloat(e.target.value) : 0.5)} className={input()} placeholder="0.5" />
+                <input type="number" min={0} step="any" value={form.weight ?? 0.5} onChange={(e) => set("weight", e.target.value ? parseFloat(e.target.value) : 0.5)} className={input()} placeholder="0.5" />
               </Field>
               <Field label="Status">
                 <select value={form.status ?? "ACTIVE"} onChange={(e) => set("status", e.target.value)} className={input()}>

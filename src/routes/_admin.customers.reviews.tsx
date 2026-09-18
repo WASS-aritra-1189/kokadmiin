@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
-import { Search, Loader2, Star, X, Check, Trash2, BookOpen, Filter } from "lucide-react";
+import { Search, Loader2, Star, X, Check, Trash2, BookOpen } from "lucide-react";
 import { reviewsService, type Review, type ReviewStatus } from "@/services/reviews.service";
 
 export const Route = createFileRoute("/_admin/customers/reviews")({
@@ -14,15 +14,14 @@ const STATUS_FILTERS: { label: string; value: ReviewStatus | "" }[] = [
   { label: "Rejected", value: "REJECTED" },
 ];
 
-type SearchMode = "accountId" | "bookId";
-
 function ReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [q, setQ] = useState("");
-  const [searchMode, setSearchMode] = useState<SearchMode>("accountId");
+  const [bookSearch, setBookSearch] = useState("");   // book title search
+  const [isbnFilter, setIsbnFilter] = useState("");   // ISBN filter
+  const [accountFilter, setAccountFilter] = useState(""); // account ID filter
   const [statusFilter, setStatusFilter] = useState<ReviewStatus | "">("");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState<Review | null>(null);
@@ -35,7 +34,9 @@ function ReviewsPage() {
     try {
       const params: Record<string, any> = { page, limit };
       if (statusFilter) params.status = statusFilter;
-      if (q) params[searchMode] = q;
+      if (bookSearch.trim()) params.bookTitle = bookSearch.trim();
+      if (isbnFilter.trim()) params.isbn = isbnFilter.trim();
+      if (accountFilter.trim()) params.accountId = accountFilter.trim();
       const res = await reviewsService.getAll(params);
       setReviews(res.data ?? []);
       setTotal(res.total ?? 0);
@@ -44,12 +45,14 @@ function ReviewsPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, statusFilter, q, searchMode]);
+  }, [page, statusFilter, bookSearch, isbnFilter, accountFilter]);
 
   useEffect(() => {
-    const t = setTimeout(fetchReviews, q ? 400 : 0);
+    const t = setTimeout(fetchReviews, (bookSearch || isbnFilter || accountFilter) ? 400 : 0);
     return () => clearTimeout(t);
-  }, [fetchReviews, q]);
+  }, [fetchReviews]);
+
+  const resetPage = () => setPage(1);
 
   const handleStatus = async (id: string, status: ReviewStatus, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -96,39 +99,45 @@ function ReviewsPage() {
       <div className="mt-5 overflow-hidden rounded-lg border border-[#E5E7EB] bg-white">
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-2 border-b border-[#F3F4F6] px-3 py-2">
-          {/* Search mode toggle */}
-          <div className="flex items-center gap-1 rounded-md border border-[#E5E7EB] p-0.5">
-            <button
-              onClick={() => { setSearchMode("accountId"); setQ(""); setPage(1); }}
-              className={"h-7 rounded px-2 text-[11px] font-medium transition-colors " +
-                (searchMode === "accountId" ? "bg-[#4F46E5] text-white" : "text-[#6B7280] hover:bg-[#F3F4F6]")}
-            >
-              <Filter className="mr-1 inline h-3 w-3" />Account
-            </button>
-            <button
-              onClick={() => { setSearchMode("bookId"); setQ(""); setPage(1); }}
-              className={"h-7 rounded px-2 text-[11px] font-medium transition-colors " +
-                (searchMode === "bookId" ? "bg-[#4F46E5] text-white" : "text-[#6B7280] hover:bg-[#F3F4F6]")}
-            >
-              <BookOpen className="mr-1 inline h-3 w-3" />Book
-            </button>
-          </div>
-
-          <div className="relative min-w-[220px] flex-1">
+          {/* Book title search */}
+          <div className="relative min-w-[180px] flex-1">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9CA3AF]" />
             <input
-              value={q}
-              onChange={(e) => { setQ(e.target.value); setPage(1); }}
-              placeholder={searchMode === "accountId" ? "Filter by Account ID (UUID)…" : "Filter by Book ID (UUID)…"}
+              value={bookSearch}
+              onChange={(e) => { setBookSearch(e.target.value); resetPage(); }}
+              placeholder="Search book name…"
               className="h-8 w-full rounded-md border border-[#E5E7EB] bg-white pl-8 pr-2 text-[12px] outline-none focus:border-[#4F46E5]"
             />
           </div>
 
+          {/* ISBN filter */}
+          <div className="relative min-w-[140px]">
+            <BookOpen className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9CA3AF]" />
+            <input
+              value={isbnFilter}
+              onChange={(e) => { setIsbnFilter(e.target.value); resetPage(); }}
+              placeholder="Filter by ISBN…"
+              className="h-8 w-full rounded-md border border-[#E5E7EB] bg-white pl-8 pr-2 text-[12px] outline-none focus:border-[#4F46E5]"
+            />
+          </div>
+
+          {/* Account ID filter */}
+          <div className="relative min-w-[180px]">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9CA3AF]" />
+            <input
+              value={accountFilter}
+              onChange={(e) => { setAccountFilter(e.target.value); resetPage(); }}
+              placeholder="Filter by Account ID…"
+              className="h-8 w-full rounded-md border border-[#E5E7EB] bg-white pl-8 pr-2 text-[12px] font-mono outline-none focus:border-[#4F46E5]"
+            />
+          </div>
+
+          {/* Status pills */}
           <div className="flex gap-1">
             {STATUS_FILTERS.map((f) => (
               <button
                 key={f.value}
-                onClick={() => { setStatusFilter(f.value); setPage(1); }}
+                onClick={() => { setStatusFilter(f.value); resetPage(); }}
                 className={"h-8 rounded-md px-3 text-[11px] font-medium border transition-colors " +
                   (statusFilter === f.value
                     ? "border-[#4F46E5] bg-[#EEF2FF] text-[#4F46E5]"

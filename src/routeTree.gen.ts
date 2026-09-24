@@ -101,6 +101,7 @@ import { Route as AdminCmsBannersRouteImport } from './routes/_admin.cms.banners
 import { Route as AdminCatalogSuppliersRouteImport } from './routes/_admin.catalog.suppliers'
 import { Route as AdminCatalogSubjectsRouteImport } from './routes/_admin.catalog.subjects'
 import { Route as AdminCatalogSubcategoriesRouteImport } from './routes/_admin.catalog.subcategories'
+import { Route as AdminCatalogStreamsRouteImport } from './routes/_admin.catalog.streams'
 import { Route as AdminCatalogSeriesRouteImport } from './routes/_admin.catalog.series'
 import { Route as AdminCatalogPublishersRouteImport } from './routes/_admin.catalog.publishers'
 import { Route as AdminCatalogLanguagesRouteImport } from './routes/_admin.catalog.languages'
@@ -596,6 +597,11 @@ const AdminCatalogSubcategoriesRoute =
     path: '/catalog/subcategories',
     getParentRoute: () => AdminRoute,
   } as any)
+const AdminCatalogStreamsRoute = AdminCatalogStreamsRouteImport.update({
+  id: '/catalog/streams',
+  path: '/catalog/streams',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCatalogSeriesRoute = AdminCatalogSeriesRouteImport.update({
   id: '/catalog/series',
   path: '/catalog/series',
@@ -711,6 +717,7 @@ export interface FileRoutesByFullPath {
   '/catalog/languages': typeof AdminCatalogLanguagesRoute
   '/catalog/publishers': typeof AdminCatalogPublishersRoute
   '/catalog/series': typeof AdminCatalogSeriesRoute
+  '/catalog/streams': typeof AdminCatalogStreamsRoute
   '/catalog/subcategories': typeof AdminCatalogSubcategoriesRoute
   '/catalog/subjects': typeof AdminCatalogSubjectsRoute
   '/catalog/suppliers': typeof AdminCatalogSuppliersRoute
@@ -821,6 +828,7 @@ export interface FileRoutesByTo {
   '/catalog/languages': typeof AdminCatalogLanguagesRoute
   '/catalog/publishers': typeof AdminCatalogPublishersRoute
   '/catalog/series': typeof AdminCatalogSeriesRoute
+  '/catalog/streams': typeof AdminCatalogStreamsRoute
   '/catalog/subcategories': typeof AdminCatalogSubcategoriesRoute
   '/catalog/subjects': typeof AdminCatalogSubjectsRoute
   '/catalog/suppliers': typeof AdminCatalogSuppliersRoute
@@ -934,6 +942,7 @@ export interface FileRoutesById {
   '/_admin/catalog/languages': typeof AdminCatalogLanguagesRoute
   '/_admin/catalog/publishers': typeof AdminCatalogPublishersRoute
   '/_admin/catalog/series': typeof AdminCatalogSeriesRoute
+  '/_admin/catalog/streams': typeof AdminCatalogStreamsRoute
   '/_admin/catalog/subcategories': typeof AdminCatalogSubcategoriesRoute
   '/_admin/catalog/subjects': typeof AdminCatalogSubjectsRoute
   '/_admin/catalog/suppliers': typeof AdminCatalogSuppliersRoute
@@ -1047,6 +1056,7 @@ export interface FileRouteTypes {
     | '/catalog/languages'
     | '/catalog/publishers'
     | '/catalog/series'
+    | '/catalog/streams'
     | '/catalog/subcategories'
     | '/catalog/subjects'
     | '/catalog/suppliers'
@@ -1157,6 +1167,7 @@ export interface FileRouteTypes {
     | '/catalog/languages'
     | '/catalog/publishers'
     | '/catalog/series'
+    | '/catalog/streams'
     | '/catalog/subcategories'
     | '/catalog/subjects'
     | '/catalog/suppliers'
@@ -1269,6 +1280,7 @@ export interface FileRouteTypes {
     | '/_admin/catalog/languages'
     | '/_admin/catalog/publishers'
     | '/_admin/catalog/series'
+    | '/_admin/catalog/streams'
     | '/_admin/catalog/subcategories'
     | '/_admin/catalog/subjects'
     | '/_admin/catalog/suppliers'
@@ -2012,6 +2024,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCatalogSubcategoriesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/catalog/streams': {
+      id: '/_admin/catalog/streams'
+      path: '/catalog/streams'
+      fullPath: '/catalog/streams'
+      preLoaderRoute: typeof AdminCatalogStreamsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/catalog/series': {
       id: '/_admin/catalog/series'
       path: '/catalog/series'
@@ -2178,6 +2197,7 @@ interface AdminRouteChildren {
   AdminCatalogLanguagesRoute: typeof AdminCatalogLanguagesRoute
   AdminCatalogPublishersRoute: typeof AdminCatalogPublishersRoute
   AdminCatalogSeriesRoute: typeof AdminCatalogSeriesRoute
+  AdminCatalogStreamsRoute: typeof AdminCatalogStreamsRoute
   AdminCatalogSubcategoriesRoute: typeof AdminCatalogSubcategoriesRoute
   AdminCatalogSubjectsRoute: typeof AdminCatalogSubjectsRoute
   AdminCatalogSuppliersRoute: typeof AdminCatalogSuppliersRoute
@@ -2283,6 +2303,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCatalogLanguagesRoute: AdminCatalogLanguagesRoute,
   AdminCatalogPublishersRoute: AdminCatalogPublishersRoute,
   AdminCatalogSeriesRoute: AdminCatalogSeriesRoute,
+  AdminCatalogStreamsRoute: AdminCatalogStreamsRoute,
   AdminCatalogSubcategoriesRoute: AdminCatalogSubcategoriesRoute,
   AdminCatalogSubjectsRoute: AdminCatalogSubjectsRoute,
   AdminCatalogSuppliersRoute: AdminCatalogSuppliersRoute,

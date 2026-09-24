@@ -24,6 +24,7 @@ export interface CourierGatewayConfig {
   warehouseState: string;
   warehousePhone: string;
   autoPickup: boolean;
+  fulfillmentMode: 'shiprocket' | 'manual';
   status: string;
 }
 
@@ -125,6 +126,7 @@ export const mapCourierConfigToProvider = (config: CourierGatewayConfig | null):
         { name: "warehouseState", label: "Warehouse State" },
         { name: "warehousePhone", label: "Warehouse Phone" },
         { name: "autoPickup", label: "Auto Pickup", type: "toggle", help: "Automatically assign courier after order placement" },
+        { name: "fulfillmentMode", label: "Fulfillment Mode", type: "select", options: ["shiprocket", "manual"], help: "Shiprocket: push orders to Shiprocket API automatically. Manual: skip Shiprocket, process via Winbds manually." },
       ]},
     ];
   }
@@ -136,7 +138,7 @@ export const mapCourierConfigToProvider = (config: CourierGatewayConfig | null):
     logo: "SR",
     color: "#7A1CFF",
     status: "connected",
-    data: config, // Pass original config data
+    data: config,
     fields: [
       { name: "email", label: "Account email" },
       { name: "password", label: "Password", type: "password" },
@@ -146,6 +148,7 @@ export const mapCourierConfigToProvider = (config: CourierGatewayConfig | null):
       { name: "warehouseState", label: "Warehouse State" },
       { name: "warehousePhone", label: "Warehouse Phone" },
       { name: "autoPickup", label: "Auto Pickup", type: "toggle", help: "Automatically assign courier after order placement" },
+      { name: "fulfillmentMode", label: "Fulfillment Mode", type: "select", options: ["shiprocket", "manual"], help: "Shiprocket: push orders to Shiprocket API automatically. Manual: skip Shiprocket, process via Winbds manually." },
     ],
     meta: [
       { label: "Email", value: config.email || "N/A" },
@@ -155,6 +158,7 @@ export const mapCourierConfigToProvider = (config: CourierGatewayConfig | null):
       { label: "State", value: config.warehouseState || "N/A" },
       { label: "Phone", value: config.warehousePhone || "N/A" },
       { label: "Auto Pickup", value: config.autoPickup ? "Enabled" : "Disabled" },
+      { label: "Fulfillment Mode", value: config.fulfillmentMode === 'manual' ? "Manual (Winbds)" : "Shiprocket (Auto)" },
     ],
   }];
 };

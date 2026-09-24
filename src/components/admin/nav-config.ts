@@ -46,6 +46,7 @@ export const NAV: NavGroup[] = [
       { label: "Publishers", to: "/catalog/publishers" },
       { label: "Boards", to: "/catalog/boards" },
       { label: "Languages", to: "/catalog/languages" },
+      { label: "Streams", to: "/catalog/streams" },
     ],
   },
   {

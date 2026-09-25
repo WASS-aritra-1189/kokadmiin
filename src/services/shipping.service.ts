@@ -40,7 +40,7 @@ export const shippingService = {
     api.get("/orders", { params: { limit: 100 } }).then(wrap),
 
   schedulePickup: (orderId: string, pickupDate: string) =>
-    api.post(`/orders/${orderId}/pickup`, { pickupDate }).then(wrap),
+    api.post(`/orders/${orderId}/pickup`, { pickupDate: pickupDate?.replace("T", " ") }).then(wrap),
 
   getLabel: (orderId: string) =>
     api.get(`/orders/${orderId}/label`).then(wrap),

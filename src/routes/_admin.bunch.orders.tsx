@@ -356,7 +356,7 @@ function OrderDrawer({
             )}
 
             {/* Schedule Pickup */}
-            {order.paymentStatus === "SUCCESS" && !order.shipmentId && !["DELIVERED", "CANCELLED"].includes(order.orderStatus || "") && (
+            {order.paymentStatus === "SUCCESS" && order.shipmentId && !["DELIVERED", "CANCELLED"].includes(order.orderStatus || "") && (
               <section className="rounded-lg border border-[#E5E7EB] p-4">
                 <div className="text-[11px] font-semibold uppercase tracking-wider text-[#6B7280] mb-3">
                   Schedule Pickup

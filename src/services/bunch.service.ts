@@ -121,7 +121,7 @@ export const bunchOrderService = {
     api.get("/bunch-orders", { params }).then(wrapPaginated),
   findOne: (id: string) => api.get(`/bunch-orders/${id}`).then(wrap),
   schedulePickup: (id: string, pickupDate?: string) =>
-    api.post(`/bunch-orders/${id}/pickup`, { pickupDate }).then(wrap),
+    api.post(`/bunch-orders/${id}/pickup`, { pickupDate: pickupDate?.replace("T", " ") }).then(wrap),
   getLabel: (id: string) => api.get(`/bunch-orders/${id}/label`).then(wrap),
   track: (id: string) => api.get(`/bunch-orders/${id}/track`).then(wrap),
   confirmCOD: (id: string) => api.post(`/bunch-orders/${id}/confirm-cod`, null).then(wrap),

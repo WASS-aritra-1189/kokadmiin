@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Check, Plus, Search, Settings2, X } from "lucide-react";
 import { toast } from "sonner";
@@ -57,6 +57,11 @@ export function IntegrationsPage({
   configService?: ConfigServiceType;
 }) {
   const [providers, setProviders] = useState(initialProviders);
+
+  // Sync when the async query resolves and initialProviders changes
+  useEffect(() => {
+    setProviders(initialProviders);
+  }, [initialProviders]);
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<"all" | "connected" | "available">("all");
   const [editing, setEditing] = useState<Provider | null>(null);
@@ -199,9 +204,10 @@ function ConfigureSheet({ provider, onClose, configEndpoint, configService }: { 
         return;
       }
       
-      // Get value from data if available
       if (data && data[f.name] !== undefined && data[f.name] !== null) {
         initial[f.name] = String(data[f.name]);
+      } else if (f.type === 'select' && f.options?.length) {
+        initial[f.name] = f.options[0];
       }
     });
     

@@ -163,7 +163,7 @@ export const ordersService = {
     api.patch(`/orders/${id}/status`, { status, ...(notes ? { notes } : {}) }).then(wrap),
 
   schedulePickup: (id: string, pickupDate?: string) =>
-    api.post(`/orders/${id}/pickup`, pickupDate ? { pickupDate } : {}).then(wrap),
+    api.post(`/orders/${id}/pickup`, pickupDate ? { pickupDate: pickupDate?.replace("T", " ") } : {}).then(wrap),
 
   getLabel: (id: string) =>
     api.get(`/orders/${id}/label`).then(wrap),

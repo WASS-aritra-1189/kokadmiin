@@ -10,6 +10,8 @@ export interface Publisher {
   website: string | null;
   address: string | null;
   status: string;
+  isFeatured: boolean;
+  featuredPriority: number | null;
   createdAt: string;
 }
 
@@ -49,4 +51,6 @@ export const publisherService = {
     api.patch(`/publishers/${id}/logo`, { logo: logoPath }).then(wrap),
     
   delete: (id: string) => api.delete(`/publishers/${id}`).then(wrap),
+  toggleFeatured: (id: string, isFeatured: boolean, featuredPriority?: number | null) =>
+    api.patch(`/publishers/${id}`, { isFeatured, ...(featuredPriority !== undefined ? { featuredPriority } : {}) }).then(wrap),
 };

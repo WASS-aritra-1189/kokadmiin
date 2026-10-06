@@ -15,6 +15,7 @@ export interface School {
   description: string | null;
   limit: number | null;
   status: string;
+  showInEcommerce: boolean;
   createdAt: string;
   updatedAt: string;
   createdBy?: string;
@@ -69,6 +70,10 @@ export const schoolService = {
   
   changeStatus: (id: string, status: string) =>
     api.patch<ApiResponse<School>>(`/schools/status/${id}`, { status })
+      .then(res => res.data.data),
+
+  toggleEcommerce: (id: string, show: boolean) =>
+    api.patch<ApiResponse<School>>(`/schools/toggle-ecommerce/${id}`, { show })
       .then(res => res.data.data),
   
   delete: (id: string) =>

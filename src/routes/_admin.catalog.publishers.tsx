@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
 import { CatalogApiPage } from "@/components/admin/CatalogApiPage";
 import { publisherService } from "@/services/publisher.service";
 
@@ -9,15 +10,68 @@ const STATUS_OPTIONS = [
   { value: "DEACTIVE", label: "Deactive" },
 ];
 
-// Wrapper: First upload image, then update publisher logo with the path
 const handleLogoUpload = async (id: string, file: File) => {
   const path = await publisherService.uploadImage(file);
   return publisherService.updateLogo(id, path);
 };
 
+function FeaturedCell({ row, onSaved }: { row: any; onSaved: () => void }) {
+  const [priority, setPriority] = useState<string>(row.featuredPriority?.toString() ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => { setPriority(row.featuredPriority?.toString() ?? ""); }, [row.featuredPriority]);
+
+  const toggle = async () => {
+    setSaving(true); setError(null);
+    try { await publisherService.toggleFeatured(row.id, !row.isFeatured); onSaved(); }
+    catch { setError("Failed"); } finally { setSaving(false); }
+  };
+
+  const save = async () => {
+    setSaving(true); setError(null);
+    try { await publisherService.toggleFeatured(row.id, true, priority ? parseInt(priority) : null); onSaved(); }
+    catch (err: any) {
+      const msg = err?.response?.data?.message ?? "";
+      setError(msg.toLowerCase().includes("unique") || err?.response?.status === 409 ? `#${priority} taken` : "Failed");
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center gap-1.5">
+        <button onClick={toggle} disabled={saving}
+          className={"rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors disabled:opacity-50 " +
+            (row.isFeatured ? "bg-[#DBEAFE] text-[#1D4ED8] hover:bg-[#BFDBFE]" : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]")}>
+          {row.isFeatured ? "⭐ Yes" : "☆ No"}
+        </button>
+        {row.isFeatured && (
+          <div className="flex items-center gap-1">
+            <input type="number" min={1} value={priority}
+              onChange={(e) => { setPriority(e.target.value); setError(null); }}
+              onKeyDown={(e) => { if (e.key === "Enter") save(); }}
+              placeholder="#"
+              className={"h-6 w-10 rounded border bg-white px-1.5 text-[11px] text-center outline-none focus:border-[#4F46E5] " +
+                (error ? "border-[#EF4444]" : "border-[#E5E7EB]")} />
+            <button onClick={save} disabled={saving}
+              className="h-6 rounded bg-[#DBEAFE] px-1.5 text-[10px] font-medium text-[#1D4ED8] hover:bg-[#BFDBFE] disabled:opacity-50">
+              ✓
+            </button>
+          </div>
+        )}
+      </div>
+      {error && <span className="text-[10px] text-[#EF4444]">{error}</span>}
+    </div>
+  );
+}
+
 function Page() {
+  const [reload, setReload] = useState(0);
+  const doReload = () => setReload((n) => n + 1);
+
   return (
     <CatalogApiPage
+      key={reload}
       title="Publishers"
       description="Publishing houses whose imprints you carry. Contact, imprints, catalog size and status."
       newLabel="New publisher"
@@ -52,6 +106,7 @@ function Page() {
         { key: "email", label: "Email", render: (r: any) => <span className="text-[#6B7280]">{r.email ?? "—"}</span> },
         { key: "phone", label: "Phone", render: (r: any) => <span className="text-[#6B7280]">{r.phone ?? "—"}</span> },
         { key: "website", label: "Website", render: (r: any) => <span className="text-[#6B7280]">{r.website ?? "—"}</span> },
+        { key: "isFeatured", label: "Featured", render: (r: any) => <FeaturedCell row={r} onSaved={doReload} /> },
       ]}
       sheetFields={[
         { key: "name", label: "Publisher name", required: true, placeholder: "e.g. Penguin Random House", full: true },

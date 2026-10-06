@@ -56,6 +56,7 @@ import { Route as AdminSettingsEmailRouteImport } from './routes/_admin.settings
 import { Route as AdminSettingsCurrencyRouteImport } from './routes/_admin.settings.currency'
 import { Route as AdminSettingsCompanyRouteImport } from './routes/_admin.settings.company'
 import { Route as AdminSettingsBackupRouteImport } from './routes/_admin.settings.backup'
+import { Route as AdminSchoolsCreateRouteImport } from './routes/_admin.schools.create'
 import { Route as AdminSchoolsClassesRouteImport } from './routes/_admin.schools.classes'
 import { Route as AdminReportsSalesRouteImport } from './routes/_admin.reports.sales'
 import { Route as AdminReportsRevenueRouteImport } from './routes/_admin.reports.revenue'
@@ -95,6 +96,7 @@ import { Route as AdminCustomersTicketsRouteImport } from './routes/_admin.custo
 import { Route as AdminCustomersReviewsRouteImport } from './routes/_admin.customers.reviews'
 import { Route as AdminCommsTemplatesRouteImport } from './routes/_admin.comms.templates'
 import { Route as AdminCommsBroadcastsRouteImport } from './routes/_admin.comms.broadcasts'
+import { Route as AdminCmsHomeSectionsRouteImport } from './routes/_admin.cms.home-sections'
 import { Route as AdminCmsFaqRouteImport } from './routes/_admin.cms.faq'
 import { Route as AdminCmsBlogRouteImport } from './routes/_admin.cms.blog'
 import { Route as AdminCmsBannersRouteImport } from './routes/_admin.cms.banners'
@@ -120,6 +122,7 @@ import { Route as AdminBooksImportExportRouteImport } from './routes/_admin.book
 import { Route as AdminBooksBulkUploadRouteImport } from './routes/_admin.books.bulk-upload'
 import { Route as AdminBooksBulkUpdateRouteImport } from './routes/_admin.books.bulk-update'
 import { Route as AdminPaymentsTransactionsIndexRouteImport } from './routes/_admin.payments.transactions.index'
+import { Route as AdminSchoolsSchoolIdEditRouteImport } from './routes/_admin.schools.$schoolId.edit'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -360,6 +363,11 @@ const AdminSettingsBackupRoute = AdminSettingsBackupRouteImport.update({
   path: '/settings/backup',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSchoolsCreateRoute = AdminSchoolsCreateRouteImport.update({
+  id: '/schools/create',
+  path: '/schools/create',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminSchoolsClassesRoute = AdminSchoolsClassesRouteImport.update({
   id: '/schools/classes',
   path: '/schools/classes',
@@ -566,6 +574,11 @@ const AdminCommsBroadcastsRoute = AdminCommsBroadcastsRouteImport.update({
   path: '/comms/broadcasts',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCmsHomeSectionsRoute = AdminCmsHomeSectionsRouteImport.update({
+  id: '/cms/home-sections',
+  path: '/cms/home-sections',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCmsFaqRoute = AdminCmsFaqRouteImport.update({
   id: '/cms/faq',
   path: '/cms/faq',
@@ -693,6 +706,12 @@ const AdminPaymentsTransactionsIndexRoute =
     path: '/payments/transactions/',
     getParentRoute: () => AdminRoute,
   } as any)
+const AdminSchoolsSchoolIdEditRoute =
+  AdminSchoolsSchoolIdEditRouteImport.update({
+    id: '/schools/$schoolId/edit',
+    path: '/schools/$schoolId/edit',
+    getParentRoute: () => AdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -724,6 +743,7 @@ export interface FileRoutesByFullPath {
   '/cms/banners': typeof AdminCmsBannersRoute
   '/cms/blog': typeof AdminCmsBlogRoute
   '/cms/faq': typeof AdminCmsFaqRoute
+  '/cms/home-sections': typeof AdminCmsHomeSectionsRoute
   '/comms/broadcasts': typeof AdminCommsBroadcastsRoute
   '/comms/templates': typeof AdminCommsTemplatesRoute
   '/customers/reviews': typeof AdminCustomersReviewsRoute
@@ -763,6 +783,7 @@ export interface FileRoutesByFullPath {
   '/reports/revenue': typeof AdminReportsRevenueRoute
   '/reports/sales': typeof AdminReportsSalesRoute
   '/schools/classes': typeof AdminSchoolsClassesRoute
+  '/schools/create': typeof AdminSchoolsCreateRoute
   '/settings/backup': typeof AdminSettingsBackupRoute
   '/settings/company': typeof AdminSettingsCompanyRoute
   '/settings/currency': typeof AdminSettingsCurrencyRoute
@@ -804,6 +825,7 @@ export interface FileRoutesByFullPath {
   '/orders/': typeof AdminOrdersIndexRoute
   '/reports/': typeof AdminReportsIndexRoute
   '/schools/': typeof AdminSchoolsIndexRoute
+  '/schools/$schoolId/edit': typeof AdminSchoolsSchoolIdEditRoute
   '/payments/transactions/': typeof AdminPaymentsTransactionsIndexRoute
 }
 export interface FileRoutesByTo {
@@ -835,6 +857,7 @@ export interface FileRoutesByTo {
   '/cms/banners': typeof AdminCmsBannersRoute
   '/cms/blog': typeof AdminCmsBlogRoute
   '/cms/faq': typeof AdminCmsFaqRoute
+  '/cms/home-sections': typeof AdminCmsHomeSectionsRoute
   '/comms/broadcasts': typeof AdminCommsBroadcastsRoute
   '/comms/templates': typeof AdminCommsTemplatesRoute
   '/customers/reviews': typeof AdminCustomersReviewsRoute
@@ -874,6 +897,7 @@ export interface FileRoutesByTo {
   '/reports/revenue': typeof AdminReportsRevenueRoute
   '/reports/sales': typeof AdminReportsSalesRoute
   '/schools/classes': typeof AdminSchoolsClassesRoute
+  '/schools/create': typeof AdminSchoolsCreateRoute
   '/settings/backup': typeof AdminSettingsBackupRoute
   '/settings/company': typeof AdminSettingsCompanyRoute
   '/settings/currency': typeof AdminSettingsCurrencyRoute
@@ -915,6 +939,7 @@ export interface FileRoutesByTo {
   '/orders': typeof AdminOrdersIndexRoute
   '/reports': typeof AdminReportsIndexRoute
   '/schools': typeof AdminSchoolsIndexRoute
+  '/schools/$schoolId/edit': typeof AdminSchoolsSchoolIdEditRoute
   '/payments/transactions': typeof AdminPaymentsTransactionsIndexRoute
 }
 export interface FileRoutesById {
@@ -949,6 +974,7 @@ export interface FileRoutesById {
   '/_admin/cms/banners': typeof AdminCmsBannersRoute
   '/_admin/cms/blog': typeof AdminCmsBlogRoute
   '/_admin/cms/faq': typeof AdminCmsFaqRoute
+  '/_admin/cms/home-sections': typeof AdminCmsHomeSectionsRoute
   '/_admin/comms/broadcasts': typeof AdminCommsBroadcastsRoute
   '/_admin/comms/templates': typeof AdminCommsTemplatesRoute
   '/_admin/customers/reviews': typeof AdminCustomersReviewsRoute
@@ -988,6 +1014,7 @@ export interface FileRoutesById {
   '/_admin/reports/revenue': typeof AdminReportsRevenueRoute
   '/_admin/reports/sales': typeof AdminReportsSalesRoute
   '/_admin/schools/classes': typeof AdminSchoolsClassesRoute
+  '/_admin/schools/create': typeof AdminSchoolsCreateRoute
   '/_admin/settings/backup': typeof AdminSettingsBackupRoute
   '/_admin/settings/company': typeof AdminSettingsCompanyRoute
   '/_admin/settings/currency': typeof AdminSettingsCurrencyRoute
@@ -1029,6 +1056,7 @@ export interface FileRoutesById {
   '/_admin/orders/': typeof AdminOrdersIndexRoute
   '/_admin/reports/': typeof AdminReportsIndexRoute
   '/_admin/schools/': typeof AdminSchoolsIndexRoute
+  '/_admin/schools/$schoolId/edit': typeof AdminSchoolsSchoolIdEditRoute
   '/_admin/payments/transactions/': typeof AdminPaymentsTransactionsIndexRoute
 }
 export interface FileRouteTypes {
@@ -1063,6 +1091,7 @@ export interface FileRouteTypes {
     | '/cms/banners'
     | '/cms/blog'
     | '/cms/faq'
+    | '/cms/home-sections'
     | '/comms/broadcasts'
     | '/comms/templates'
     | '/customers/reviews'
@@ -1102,6 +1131,7 @@ export interface FileRouteTypes {
     | '/reports/revenue'
     | '/reports/sales'
     | '/schools/classes'
+    | '/schools/create'
     | '/settings/backup'
     | '/settings/company'
     | '/settings/currency'
@@ -1143,6 +1173,7 @@ export interface FileRouteTypes {
     | '/orders/'
     | '/reports/'
     | '/schools/'
+    | '/schools/$schoolId/edit'
     | '/payments/transactions/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -1174,6 +1205,7 @@ export interface FileRouteTypes {
     | '/cms/banners'
     | '/cms/blog'
     | '/cms/faq'
+    | '/cms/home-sections'
     | '/comms/broadcasts'
     | '/comms/templates'
     | '/customers/reviews'
@@ -1213,6 +1245,7 @@ export interface FileRouteTypes {
     | '/reports/revenue'
     | '/reports/sales'
     | '/schools/classes'
+    | '/schools/create'
     | '/settings/backup'
     | '/settings/company'
     | '/settings/currency'
@@ -1254,6 +1287,7 @@ export interface FileRouteTypes {
     | '/orders'
     | '/reports'
     | '/schools'
+    | '/schools/$schoolId/edit'
     | '/payments/transactions'
   id:
     | '__root__'
@@ -1287,6 +1321,7 @@ export interface FileRouteTypes {
     | '/_admin/cms/banners'
     | '/_admin/cms/blog'
     | '/_admin/cms/faq'
+    | '/_admin/cms/home-sections'
     | '/_admin/comms/broadcasts'
     | '/_admin/comms/templates'
     | '/_admin/customers/reviews'
@@ -1326,6 +1361,7 @@ export interface FileRouteTypes {
     | '/_admin/reports/revenue'
     | '/_admin/reports/sales'
     | '/_admin/schools/classes'
+    | '/_admin/schools/create'
     | '/_admin/settings/backup'
     | '/_admin/settings/company'
     | '/_admin/settings/currency'
@@ -1367,6 +1403,7 @@ export interface FileRouteTypes {
     | '/_admin/orders/'
     | '/_admin/reports/'
     | '/_admin/schools/'
+    | '/_admin/schools/$schoolId/edit'
     | '/_admin/payments/transactions/'
   fileRoutesById: FileRoutesById
 }
@@ -1709,6 +1746,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSettingsBackupRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/schools/create': {
+      id: '/_admin/schools/create'
+      path: '/schools/create'
+      fullPath: '/schools/create'
+      preLoaderRoute: typeof AdminSchoolsCreateRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/schools/classes': {
       id: '/_admin/schools/classes'
       path: '/schools/classes'
@@ -1982,6 +2026,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCommsBroadcastsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/cms/home-sections': {
+      id: '/_admin/cms/home-sections'
+      path: '/cms/home-sections'
+      fullPath: '/cms/home-sections'
+      preLoaderRoute: typeof AdminCmsHomeSectionsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/cms/faq': {
       id: '/_admin/cms/faq'
       path: '/cms/faq'
@@ -2157,6 +2208,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPaymentsTransactionsIndexRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/schools/$schoolId/edit': {
+      id: '/_admin/schools/$schoolId/edit'
+      path: '/schools/$schoolId/edit'
+      fullPath: '/schools/$schoolId/edit'
+      preLoaderRoute: typeof AdminSchoolsSchoolIdEditRouteImport
+      parentRoute: typeof AdminRoute
+    }
   }
 }
 
@@ -2204,6 +2262,7 @@ interface AdminRouteChildren {
   AdminCmsBannersRoute: typeof AdminCmsBannersRoute
   AdminCmsBlogRoute: typeof AdminCmsBlogRoute
   AdminCmsFaqRoute: typeof AdminCmsFaqRoute
+  AdminCmsHomeSectionsRoute: typeof AdminCmsHomeSectionsRoute
   AdminCommsBroadcastsRoute: typeof AdminCommsBroadcastsRoute
   AdminCommsTemplatesRoute: typeof AdminCommsTemplatesRoute
   AdminCustomersReviewsRoute: typeof AdminCustomersReviewsRoute
@@ -2241,6 +2300,7 @@ interface AdminRouteChildren {
   AdminReportsRevenueRoute: typeof AdminReportsRevenueRoute
   AdminReportsSalesRoute: typeof AdminReportsSalesRoute
   AdminSchoolsClassesRoute: typeof AdminSchoolsClassesRoute
+  AdminSchoolsCreateRoute: typeof AdminSchoolsCreateRoute
   AdminSettingsBackupRoute: typeof AdminSettingsBackupRoute
   AdminSettingsCompanyRoute: typeof AdminSettingsCompanyRoute
   AdminSettingsCurrencyRoute: typeof AdminSettingsCurrencyRoute
@@ -2279,6 +2339,7 @@ interface AdminRouteChildren {
   AdminOrdersIndexRoute: typeof AdminOrdersIndexRoute
   AdminReportsIndexRoute: typeof AdminReportsIndexRoute
   AdminSchoolsIndexRoute: typeof AdminSchoolsIndexRoute
+  AdminSchoolsSchoolIdEditRoute: typeof AdminSchoolsSchoolIdEditRoute
   AdminPaymentsTransactionsIndexRoute: typeof AdminPaymentsTransactionsIndexRoute
 }
 
@@ -2310,6 +2371,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCmsBannersRoute: AdminCmsBannersRoute,
   AdminCmsBlogRoute: AdminCmsBlogRoute,
   AdminCmsFaqRoute: AdminCmsFaqRoute,
+  AdminCmsHomeSectionsRoute: AdminCmsHomeSectionsRoute,
   AdminCommsBroadcastsRoute: AdminCommsBroadcastsRoute,
   AdminCommsTemplatesRoute: AdminCommsTemplatesRoute,
   AdminCustomersReviewsRoute: AdminCustomersReviewsRoute,
@@ -2347,6 +2409,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminReportsRevenueRoute: AdminReportsRevenueRoute,
   AdminReportsSalesRoute: AdminReportsSalesRoute,
   AdminSchoolsClassesRoute: AdminSchoolsClassesRoute,
+  AdminSchoolsCreateRoute: AdminSchoolsCreateRoute,
   AdminSettingsBackupRoute: AdminSettingsBackupRoute,
   AdminSettingsCompanyRoute: AdminSettingsCompanyRoute,
   AdminSettingsCurrencyRoute: AdminSettingsCurrencyRoute,
@@ -2385,6 +2448,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminOrdersIndexRoute: AdminOrdersIndexRoute,
   AdminReportsIndexRoute: AdminReportsIndexRoute,
   AdminSchoolsIndexRoute: AdminSchoolsIndexRoute,
+  AdminSchoolsSchoolIdEditRoute: AdminSchoolsSchoolIdEditRoute,
   AdminPaymentsTransactionsIndexRoute: AdminPaymentsTransactionsIndexRoute,
 }
 

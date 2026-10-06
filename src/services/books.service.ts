@@ -24,6 +24,7 @@ export interface BookItem {
   isbn: string;
   authorId: string | null;
   author: BookAuthor | null;
+  coAuthors: BookAuthor[];
   productCategoryId: string | null;
   productCategory: BookCategory | null;
   publisherId: string | null;
@@ -49,6 +50,10 @@ export interface BookItem {
   quantity: number;
   weight: number | null;
   isStaffPick: boolean;
+  isNewRelease: boolean;
+  newReleasePriority: number | null;
+  isBestSeller: boolean;
+  bestSellerPriority: number | null;
   status: string;
   createdAt: string;
 }
@@ -75,6 +80,7 @@ export interface BooksQuery {
 export interface CreateBookPayload {
   title: string;
   authorId?: string;
+  coAuthorIds?: string[];
   productCategoryId?: string;
   publisherId?: string;
   boardId?: string;
@@ -91,6 +97,10 @@ export interface CreateBookPayload {
   quantity?: number;
   weight?: number;
   isStaffPick?: boolean;
+  isNewRelease?: boolean;
+  newReleasePriority?: number | null;
+  isBestSeller?: boolean;
+  bestSellerPriority?: number | null;
   status?: string;
 }
 
@@ -118,6 +128,10 @@ export const booksService = {
   update: (id: string, data: Partial<CreateBookPayload>) => api.patch(`/books/${id}`, data).then(wrapSingle),
   updateStatus: (id: string, status: string) => api.patch(`/books/status/${id}`, { status }).then(wrap),
   toggleStaffPick: (id: string, isStaffPick: boolean) => api.patch(`/books/${id}`, { isStaffPick }).then(wrapSingle),
+  toggleNewRelease: (id: string, isNewRelease: boolean, newReleasePriority?: number | null) =>
+    api.patch(`/books/${id}`, { isNewRelease, ...(newReleasePriority !== undefined ? { newReleasePriority } : {}) }).then(wrapSingle),
+  toggleBestSeller: (id: string, isBestSeller: boolean, bestSellerPriority?: number | null) =>
+    api.patch(`/books/${id}`, { isBestSeller, ...(bestSellerPriority !== undefined ? { bestSellerPriority } : {}) }).then(wrapSingle),
   uploadCover: (id: string, file: File) => {
     const fd = new FormData(); fd.append("file", file);
     return api.put(`/books/cover/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } }).then(wrapSingle);

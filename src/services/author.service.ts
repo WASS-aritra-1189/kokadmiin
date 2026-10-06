@@ -10,6 +10,8 @@ export interface Author {
   profileImage: string | null;
   status: string;
   bookCount: number;
+  isFeatured: boolean;
+  featuredPriority: number | null;
   createdAt: string;
 }
 
@@ -35,4 +37,6 @@ export const authorService = {
     return api.put(`/authors/${id}/profile-image`, fd, { headers: { "Content-Type": "multipart/form-data" } }).then(wrap);
   },
   delete: (id: string) => api.delete(`/authors/${id}`).then(wrap),
+  toggleFeatured: (id: string, isFeatured: boolean, featuredPriority?: number | null) =>
+    api.patch(`/authors/${id}`, { isFeatured, ...(featuredPriority !== undefined ? { featuredPriority } : {}) }).then(wrap),
 };

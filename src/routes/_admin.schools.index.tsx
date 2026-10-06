@@ -175,13 +175,14 @@ function SchoolsPage() {
                 <th className="px-3 py-2 text-left">Phone</th>
                 <th className="px-3 py-2 text-left">Location</th>
                 <th className="px-3 py-2 text-left">Status</th>
+                <th className="px-3 py-2 text-left">Show in Store</th>
                 <th className="px-3 py-2 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-[12px] text-[#6B7280]">
+                  <td colSpan={8} className="px-3 py-8 text-center text-[12px] text-[#6B7280]">
                     <div className="flex items-center justify-center gap-2">
                       <Loader2 className="h-5 w-5 animate-spin" />
                       <span>Loading schools...</span>
@@ -191,7 +192,7 @@ function SchoolsPage() {
               )}
               {!loading && schools.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-[12px] text-[#6B7280]">
+                  <td colSpan={8} className="px-3 py-8 text-center text-[12px] text-[#6B7280]">
                     No schools found.
                   </td>
                 </tr>
@@ -218,6 +219,22 @@ function SchoolsPage() {
                       {school.status}
                     </span>
                   </td>
+                  <td className="px-3 py-2">
+                    <button
+                      onClick={async () => {
+                        try {
+                          await schoolService.toggleEcommerce(school.id, !school.showInEcommerce);
+                          loadSchools();
+                        } catch { alert("Failed to update"); }
+                      }}
+                      className={"rounded-full px-2.5 py-0.5 text-[10px] font-medium transition-colors " +
+                        (school.showInEcommerce
+                          ? "bg-[#DCFCE7] text-[#166534] hover:bg-[#BBF7D0]"
+                          : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]")}
+                    >
+                      {school.showInEcommerce ? "✓ Visible" : "Hidden"}
+                    </button>
+                  </td>
                   <td className="px-3 py-2 text-right">
                     <div className="flex items-center justify-end gap-1">
                       <button
@@ -228,7 +245,8 @@ function SchoolsPage() {
                         <Eye className="h-3.5 w-3.5" />
                       </button>
                       <Link
-                        to={`/admin/schools/${school.id}/edit`}
+                        to="/admin/schools/$schoolId/edit"
+                        params={{ schoolId: school.id }}
                         className="rounded-md border border-[#E5E7EB] px-2 py-1 text-[11px] font-medium text-[#374151] hover:bg-[#F9FAFB]"
                       >
                         Edit

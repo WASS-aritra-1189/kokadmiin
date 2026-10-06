@@ -26,10 +26,11 @@ export const Route = createFileRoute("/_admin/books/")({
 const LIMIT_OPTIONS = [10, 20, 50, 100];
 
 const EMPTY: CreateBookPayload = {
-  title: "", authorId: "", productCategoryId: "", publisherId: "", boardId: "", classId: "",
+  title: "", authorId: "", coAuthorIds: [], productCategoryId: "", publisherId: "", boardId: "", classId: "",
   subjectId: "", genreId: "", languageId: "", description: "", publisher: "",
   publishedYear: "", pages: undefined, price: undefined, discountPrice: undefined,
-  quantity: 0, weight: 0.5, status: "ACTIVE",
+  quantity: 0, weight: 0.5, isStaffPick: false, isNewRelease: false, newReleasePriority: null,
+  isBestSeller: false, bestSellerPriority: null, status: "ACTIVE",
 };
 
 function BooksPage() {
@@ -126,6 +127,10 @@ function BooksPage() {
       { key: 'discountPrice', header: 'Selling Price', formatter: (_: any, r: BookItem) => `₹${r.discountPrice ?? r.price}` },
       { key: 'quantity', header: 'Stock' },
       { key: 'isStaffPick', header: 'Staff Pick', formatter: (v: boolean) => v ? 'Yes' : 'No' },
+      { key: 'isNewRelease', header: 'New Release', formatter: (v: boolean) => v ? 'Yes' : 'No' },
+      { key: 'newReleasePriority', header: 'NR Priority', formatter: (v: any) => v ?? '—' },
+      { key: 'isBestSeller', header: 'Best Seller', formatter: (v: boolean) => v ? 'Yes' : 'No' },
+      { key: 'bestSellerPriority', header: 'BS Priority', formatter: (v: any) => v ?? '—' },
       { key: 'status', header: 'Status' },
     ];
     exportToExcel({ title: 'Books Catalog', filename: 'books-catalog', columns, data: items });
@@ -239,6 +244,8 @@ function BooksPage() {
                 <th className="px-3 py-2 text-right">Price</th>
                 <th className="px-3 py-2 text-right">Stock</th>
                 <th className="px-3 py-2 text-left">Staff Pick</th>
+                <th className="px-3 py-2 text-left">New Release</th>
+                <th className="px-3 py-2 text-left">Best Seller</th>
                 <th className="px-3 py-2 text-left">Status</th>
                 <th className="px-3 py-2" />
               </tr>
@@ -277,20 +284,20 @@ function BooksPage() {
                   <td className="px-3 py-2">
                     <button
                       onClick={async () => {
-                        try {
-                          await booksService.toggleStaffPick(b.id, !b.isStaffPick);
-                          load();
-                        } catch (err) {
-                          console.error("Failed to toggle staff pick", err);
-                        }
+                        try { await booksService.toggleStaffPick(b.id, !b.isStaffPick); load(); }
+                        catch (err) { console.error("Failed to toggle staff pick", err); }
                       }}
                       className={"rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors " +
-                        (b.isStaffPick
-                          ? "bg-[#FEF9C3] text-[#854D0E] hover:bg-[#FDE68A]"
-                          : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]")}
+                        (b.isStaffPick ? "bg-[#FEF9C3] text-[#854D0E] hover:bg-[#FDE68A]" : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]")}
                     >
                       {b.isStaffPick ? "★ Yes" : "☆ No"}
                     </button>
+                  </td>
+                  <td className="px-3 py-2">
+                    <NewReleaseCell book={b} onSaved={load} allItems={items} />
+                  </td>
+                  <td className="px-3 py-2">
+                    <BestSellerCell book={b} onSaved={load} allItems={items} />
                   </td>
                   <td className="px-3 py-2"><StatusChip status={b.status} /></td>
                   <td className="px-3 py-2 text-right">
@@ -425,6 +432,166 @@ function BooksPage() {
   );
 }
 
+// ─── New Release Cell ────────────────────────────────────────────────────────
+
+function NewReleaseCell({ book, onSaved, allItems }: { book: BookItem; onSaved: () => void; allItems: BookItem[] }) {
+  const nextPriority = Math.max(0, ...allItems.filter(b => b.isNewRelease && b.newReleasePriority).map(b => b.newReleasePriority!)) + 1;
+  const [priority, setPriority] = useState<string>(book.newReleasePriority?.toString() ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => { setPriority(book.newReleasePriority?.toString() ?? ""); }, [book.newReleasePriority]);
+
+  const toggle = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      if (!book.isNewRelease) {
+        setPriority(String(nextPriority));
+        await booksService.toggleNewRelease(book.id, true, nextPriority);
+      } else {
+        await booksService.toggleNewRelease(book.id, false);
+      }
+      onSaved();
+    }
+    catch (err) { console.error("Failed to toggle new release", err); }
+    finally { setSaving(false); }
+  };
+
+  const savePriority = async () => {
+    setError(null);
+    setSaving(true);
+    try {
+      await booksService.toggleNewRelease(book.id, true, priority ? parseInt(priority) : null);
+      onSaved();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? err?.message ?? "";
+      if (msg.toLowerCase().includes("unique") || msg.toLowerCase().includes("duplicate") || err?.response?.status === 409) {
+        setError(`#${priority} already taken`);
+      } else {
+        setError("Failed to save");
+      }
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={toggle}
+          disabled={saving}
+          className={"rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors disabled:opacity-50 " +
+            (book.isNewRelease ? "bg-[#DBEAFE] text-[#1D4ED8] hover:bg-[#BFDBFE]" : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]")}
+        >
+          {book.isNewRelease ? "🆕 Yes" : "☆ No"}
+        </button>
+        {book.isNewRelease && (
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              min={1}
+              value={priority}
+              onChange={(e) => { setPriority(e.target.value); setError(null); }}
+              onKeyDown={(e) => { if (e.key === "Enter") savePriority(); }}
+              placeholder="#"
+              className={"h-6 w-10 rounded border bg-white px-1.5 text-[11px] text-center outline-none focus:border-[#4F46E5] " +
+                (error ? "border-[#EF4444]" : "border-[#E5E7EB]")}
+            />
+            <button
+              onClick={savePriority}
+              disabled={saving}
+              className="h-6 rounded bg-[#DBEAFE] px-1.5 text-[10px] font-medium text-[#1D4ED8] hover:bg-[#BFDBFE] disabled:opacity-50"
+            >
+              ✓
+            </button>
+          </div>
+        )}
+      </div>
+      {error && <span className="text-[10px] text-[#EF4444]">{error}</span>}
+    </div>
+  );
+}
+
+// ─── Best Seller Cell ─────────────────────────────────────────────────────
+
+function BestSellerCell({ book, onSaved, allItems }: { book: BookItem; onSaved: () => void; allItems: BookItem[] }) {
+  const nextPriority = Math.max(0, ...allItems.filter(b => b.isBestSeller && b.bestSellerPriority).map(b => b.bestSellerPriority!)) + 1;
+  const [priority, setPriority] = useState<string>(book.bestSellerPriority?.toString() ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => { setPriority(book.bestSellerPriority?.toString() ?? ""); }, [book.bestSellerPriority]);
+
+  const toggle = async () => {
+    setSaving(true);
+    setError(null);
+    try {
+      if (!book.isBestSeller) {
+        setPriority(String(nextPriority));
+        await booksService.toggleBestSeller(book.id, true, nextPriority);
+      } else {
+        await booksService.toggleBestSeller(book.id, false);
+      }
+      onSaved();
+    }
+    catch (err) { console.error("Failed to toggle best seller", err); }
+    finally { setSaving(false); }
+  };
+
+  const savePriority = async () => {
+    setError(null);
+    setSaving(true);
+    try {
+      await booksService.toggleBestSeller(book.id, true, priority ? parseInt(priority) : null);
+      onSaved();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? err?.message ?? "";
+      if (msg.toLowerCase().includes("unique") || msg.toLowerCase().includes("duplicate") || err?.response?.status === 409) {
+        setError(`#${priority} already taken`);
+      } else {
+        setError("Failed to save");
+      }
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="flex flex-col gap-0.5">
+      <div className="flex items-center gap-1.5">
+        <button
+          onClick={toggle}
+          disabled={saving}
+          className={"rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors disabled:opacity-50 " +
+            (book.isBestSeller ? "bg-[#FEF9C3] text-[#854D0E] hover:bg-[#FDE68A]" : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]")}
+        >
+          {book.isBestSeller ? "🔥 Yes" : "☆ No"}
+        </button>
+        {book.isBestSeller && (
+          <div className="flex items-center gap-1">
+            <input
+              type="number"
+              min={1}
+              value={priority}
+              onChange={(e) => { setPriority(e.target.value); setError(null); }}
+              onKeyDown={(e) => { if (e.key === "Enter") savePriority(); }}
+              placeholder="#"
+              className={"h-6 w-10 rounded border bg-white px-1.5 text-[11px] text-center outline-none focus:border-[#4F46E5] " +
+                (error ? "border-[#EF4444]" : "border-[#E5E7EB]")}
+            />
+            <button
+              onClick={savePriority}
+              disabled={saving}
+              className="h-6 rounded bg-[#FEF9C3] px-1.5 text-[10px] font-medium text-[#854D0E] hover:bg-[#FDE68A] disabled:opacity-50"
+            >
+              ✓
+            </button>
+          </div>
+        )}
+      </div>
+      {error && <span className="text-[10px] text-[#EF4444]">{error}</span>}
+    </div>
+  );
+}
+
 // ─── Book Detail View Modal ──────────────────────────────────────────────────
 
 interface BookDetailViewProps {
@@ -487,6 +654,12 @@ function BookDetailView({ book, onClose, loading }: BookDetailViewProps) {
                   <span className="text-[#6B7280]">Author:</span>
                   <span className="ml-2 font-medium">{book.author?.name || "—"}</span>
                 </div>
+                {book.coAuthors?.length > 0 && (
+                  <div className="col-span-2">
+                    <span className="text-[#6B7280]">Co-Authors:</span>
+                    <span className="ml-2 font-medium">{book.coAuthors.map((a) => a.name).join(", ")}</span>
+                  </div>
+                )}
                 <div>
                   <span className="text-[#6B7280]">Language:</span>
                   <span className="ml-2">{book.language?.name || "—"}</span>
@@ -506,6 +679,14 @@ function BookDetailView({ book, onClose, loading }: BookDetailViewProps) {
                 <div>
                   <span className="text-[#6B7280]">Staff Pick:</span>
                   <span className="ml-2">{book.isStaffPick ? "★ Yes" : "☆ No"}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B7280]">New Release:</span>
+                  <span className="ml-2">{book.isNewRelease ? `🆕 Yes (Priority: ${book.newReleasePriority ?? "—"})` : "☆ No"}</span>
+                </div>
+                <div>
+                  <span className="text-[#6B7280]">Best Seller:</span>
+                  <span className="ml-2">{book.isBestSeller ? `🔥 Yes (Priority: ${book.bestSellerPriority ?? "—"})` : "☆ No"}</span>
                 </div>
               </div>
             </div>
@@ -642,6 +823,7 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
       ? {
           title: book.title,
           authorId: book.authorId ?? "",
+          coAuthorIds: book.coAuthors?.map((a) => a.id) ?? [],
           productCategoryId: book.productCategoryId ?? "",
           publisherId: (book as any).publisherId ?? "",
           boardId: book.boardId ?? "",
@@ -657,6 +839,11 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
           discountPrice: book.discountPrice ? parseFloat(book.discountPrice) : undefined,
           quantity: book.quantity,
           weight: book.weight ?? 0.5,
+          isStaffPick: book.isStaffPick ?? false,
+          isNewRelease: book.isNewRelease ?? false,
+          newReleasePriority: book.newReleasePriority ?? null,
+          isBestSeller: book.isBestSeller ?? false,
+          bestSellerPriority: book.bestSellerPriority ?? null,
           status: book.status,
         }
       : { ...EMPTY }
@@ -806,6 +993,30 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
               <Field label="Author">
                 <Select value={form.authorId ?? ""} onChange={(v) => set("authorId", v)} options={authors} placeholder="Select author" />
               </Field>
+              <Field label="Co-Authors" full>
+                <div className="flex flex-wrap gap-1.5 min-h-8 rounded-md border border-[#E5E7EB] bg-white px-2 py-1.5">
+                  {authors.filter((a) => a.id !== form.authorId).map((a) => {
+                    const selected = (form.coAuthorIds ?? []).includes(a.id);
+                    return (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => set("coAuthorIds", selected
+                          ? (form.coAuthorIds ?? []).filter((id) => id !== a.id)
+                          : [...(form.coAuthorIds ?? []), a.id]
+                        )}
+                        className={"rounded-full px-2 py-0.5 text-[11px] font-medium border transition-colors " +
+                          (selected ? "bg-[#EEF2FF] border-[#4F46E5] text-[#4F46E5]" : "bg-[#F9FAFB] border-[#E5E7EB] text-[#6B7280] hover:border-[#4F46E5]")}
+                      >
+                        {selected ? "✓ " : ""}{a.name}
+                      </button>
+                    );
+                  })}
+                  {authors.filter((a) => a.id !== form.authorId).length === 0 && (
+                    <span className="text-[11px] text-[#9CA3AF]">No other authors available</span>
+                  )}
+                </div>
+              </Field>
               <Field label="Publisher">
                 <Select value={form.publisherId ?? ""} onChange={(v) => set("publisherId", v)} options={publishers} placeholder="Select publisher" />
               </Field>
@@ -862,6 +1073,46 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
                   <option value="DEACTIVE">Deactive</option>
                 </select>
               </Field>
+              <Field label="Staff Pick">
+                <label className="flex h-8 cursor-pointer items-center gap-2 text-[12px]">
+                  <input type="checkbox" checked={!!form.isStaffPick} onChange={(e) => set("isStaffPick", e.target.checked)} className="h-3.5 w-3.5 accent-[#4F46E5]" />
+                  Mark as Staff Pick
+                </label>
+              </Field>
+              <Field label="New Release">
+                <label className="flex h-8 cursor-pointer items-center gap-2 text-[12px]">
+                  <input type="checkbox" checked={!!form.isNewRelease} onChange={(e) => set("isNewRelease", e.target.checked)} className="h-3.5 w-3.5 accent-[#4F46E5]" />
+                  Mark as New Release
+                </label>
+              </Field>
+              {form.isNewRelease && (
+                <Field label="New Release Priority">
+                  <input
+                    type="number" min={1}
+                    value={form.newReleasePriority ?? ""}
+                    onChange={(e) => set("newReleasePriority", e.target.value ? parseInt(e.target.value) : null)}
+                    className={input()}
+                    placeholder="1 = highest priority"
+                  />
+                </Field>
+              )}
+              <Field label="Best Seller">
+                <label className="flex h-8 cursor-pointer items-center gap-2 text-[12px]">
+                  <input type="checkbox" checked={!!form.isBestSeller} onChange={(e) => set("isBestSeller", e.target.checked)} className="h-3.5 w-3.5 accent-[#4F46E5]" />
+                  Mark as Best Seller
+                </label>
+              </Field>
+              {form.isBestSeller && (
+                <Field label="Best Seller Priority">
+                  <input
+                    type="number" min={1}
+                    value={form.bestSellerPriority ?? ""}
+                    onChange={(e) => set("bestSellerPriority", e.target.value ? parseInt(e.target.value) : null)}
+                    className={input()}
+                    placeholder="1 = highest priority"
+                  />
+                </Field>
+              )}
             </Section>
 
             {/* Cover Image */}

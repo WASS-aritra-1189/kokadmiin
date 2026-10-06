@@ -100,6 +100,7 @@ export const NAV: NavGroup[] = [
     items: [
       { label: "Pages", to: "/settings/pages" },
       { label: "Banners", to: "/cms/banners" },
+      { label: "Home Sections", to: "/cms/home-sections" },
       { label: "Blog", to: "/cms/blog" },
       { label: "FAQ", to: "/cms/faq" },
     ],

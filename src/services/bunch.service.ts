@@ -54,21 +54,18 @@ export interface Bunch {
   description: string | null;
   classId: string;
   languageId: string;
+  streamId: string | null;
+  secondLanguageId: string | null;
   totalAmount: number;
   quantity: number;
   allowPartialBuy: boolean;
   status: string;
-  class?: { id: string; name: string; board?: { id: string; name: string } } | null;
+  class?: { id: string; name: string } | null;
   language?: { id: string; name: string } | null;
-  schools?: {
-    city: ReactNode;
-    state: ReactNode; id: string; name: string 
-}[];
-  books?: {
-    isbn: import("react").JSX.Element;
-    price: import("react").JSX.Element;
-    discountPrice: any; id: string; title: string 
-}[];
+  stream?: { id: string; name: string } | null;
+  secondLanguage?: { id: string; name: string } | null;
+  schools?: { city: ReactNode; state: ReactNode; id: string; name: string }[];
+  books?: { isbn: import("react").JSX.Element; price: import("react").JSX.Element; discountPrice: any; id: string; title: string }[];
   createdAt: string;
 }
 
@@ -99,7 +96,7 @@ export const bunchService = {
     api.get("/bunches", { params }).then(wrapPaginated),
   create: (data: {
     name: string;
-    classId: string;
+    classId?: string;
     languageId: string;
     schoolIds: string[];
     bookIds: string[];

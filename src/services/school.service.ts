@@ -59,6 +59,10 @@ export const schoolService = {
   getActive: () =>
     api.get<ApiResponse<School[]>>("/schools/active")
       .then(res => res.data.data),
+
+  getAllActive: (params: { page?: number; limit?: number }) =>
+    api.get<ApiResponse<PaginatedResponse<School>>>("/schools", { params: { status: 'ACTIVE', limit: 10, ...params } })
+      .then(res => res.data.data),
   
   create: (data: { name: string; email?: string; phone?: string; address?: string; city?: string; state?: string; pincode?: string; description?: string }) =>
     api.post<ApiResponse<School>>("/schools", data)

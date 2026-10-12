@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/store";
 import { fetchBooks, createBook, updateBook, deleteBook, deleteMultipleBooks } from "@/store/slices/booksSlice";
 import { catalogApi, booksService, type BookItem, type CreateBookPayload, type DropdownItem, type BookLanguage, type BookClass, type BookSubject, type BookInsiderImage } from "@/services/books.service";
 import { exportToPDF, exportToExcel } from "@/lib/export";
+import { formatPrice } from "@/lib/currency";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { PaginationBar } from "@/components/ui/pagination-bar";
 import {
@@ -107,8 +108,8 @@ function BooksPage() {
       { key: 'category', header: 'Category', formatter: (_: any, r: BookItem) => r.productCategory?.name ?? '-' },
       { key: 'genre', header: 'Genre', formatter: (_: any, r: BookItem) => r.genre?.name ?? '-' },
       { key: 'language', header: 'Language', formatter: (_: any, r: BookItem) => r.language?.name ?? '-' },
-      { key: 'price', header: 'MRP', formatter: (v: number) => `₹${v}` },
-      { key: 'discountPrice', header: 'Price', formatter: (_: any, r: BookItem) => `₹${r.discountPrice ?? r.price}` },
+      { key: 'price', header: 'MRP', formatter: (v: number, r: BookItem) => formatPrice(v, r.currency) },
+      { key: 'discountPrice', header: 'Price', formatter: (_: any, r: BookItem) => formatPrice(r.discountPrice ?? r.price, r.currency) },
       { key: 'quantity', header: 'Stock' },
       { key: 'status', header: 'Status' },
     ];
@@ -123,8 +124,8 @@ function BooksPage() {
       { key: 'category', header: 'Category', formatter: (_: any, r: BookItem) => r.productCategory?.name ?? '-' },
       { key: 'genre', header: 'Genre', formatter: (_: any, r: BookItem) => r.genre?.name ?? '-' },
       { key: 'language', header: 'Language', formatter: (_: any, r: BookItem) => r.language?.name ?? '-' },
-      { key: 'price', header: 'MRP', formatter: (v: number) => `₹${v}` },
-      { key: 'discountPrice', header: 'Selling Price', formatter: (_: any, r: BookItem) => `₹${r.discountPrice ?? r.price}` },
+      { key: 'price', header: 'MRP', formatter: (v: number, r: BookItem) => formatPrice(v, r.currency) },
+      { key: 'discountPrice', header: 'Selling Price', formatter: (_: any, r: BookItem) => formatPrice(r.discountPrice ?? r.price, r.currency) },
       { key: 'quantity', header: 'Stock' },
       { key: 'isStaffPick', header: 'Staff Pick', formatter: (v: boolean) => v ? 'Yes' : 'No' },
       { key: 'isNewRelease', header: 'New Release', formatter: (v: boolean) => v ? 'Yes' : 'No' },
@@ -276,28 +277,33 @@ function BooksPage() {
                   <td className="px-3 py-2 text-[#4B5563]">{b.productCategory?.name ?? "—"}</td>
                   <td className="px-3 py-2 text-[#4B5563]">{b.genre?.name ?? "—"}</td>
                   <td className="px-3 py-2 text-[#4B5563]">{b.language?.name ?? "—"}</td>
-                  <td className="px-3 py-2 text-right tabular-nums text-[#9CA3AF] line-through">₹{b.price}</td>
-                  <td className="px-3 py-2 text-right font-medium tabular-nums">₹{b.discountPrice ?? b.price}</td>
+                  <td className="px-3 py-2 text-right tabular-nums text-[#9CA3AF] line-through">{formatPrice(b.price, b.currency)}</td>
+                  <td className="px-3 py-2 text-right font-medium tabular-nums">{formatPrice(b.discountPrice ?? b.price, b.currency)}</td>
                   <td className={"px-3 py-2 text-right tabular-nums font-medium " + (b.quantity === 0 ? "text-[#EF4444]" : b.quantity <= 10 ? "text-[#F59E0B]" : "text-[#111827]")}>
                     {b.quantity}
                   </td>
                   <td className="px-3 py-2">
                     <button
                       onClick={async () => {
+                        if (b.quantity === 0) return;
                         try { await booksService.toggleStaffPick(b.id, !b.isStaffPick); load(); }
                         catch (err) { console.error("Failed to toggle staff pick", err); }
                       }}
+                      disabled={b.quantity === 0 && !b.isStaffPick}
+                      title={b.quantity === 0 && !b.isStaffPick ? "Out of stock" : undefined}
                       className={"rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors " +
-                        (b.isStaffPick ? "bg-[#FEF9C3] text-[#854D0E] hover:bg-[#FDE68A]" : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]")}
+                        (b.quantity === 0 && !b.isStaffPick
+                          ? "bg-[#F3F4F6] text-[#D1D5DB] cursor-not-allowed"
+                          : b.isStaffPick ? "bg-[#FEF9C3] text-[#854D0E] hover:bg-[#FDE68A]" : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]")}
                     >
                       {b.isStaffPick ? "★ Yes" : "☆ No"}
                     </button>
                   </td>
                   <td className="px-3 py-2">
-                    <NewReleaseCell book={b} onSaved={load} allItems={items} />
+                    <NewReleaseCell book={b} onSaved={load} />
                   </td>
                   <td className="px-3 py-2">
-                    <BestSellerCell book={b} onSaved={load} allItems={items} />
+                    <BestSellerCell book={b} onSaved={load} />
                   </td>
                   <td className="px-3 py-2"><StatusChip status={b.status} /></td>
                   <td className="px-3 py-2 text-right">
@@ -434,8 +440,7 @@ function BooksPage() {
 
 // ─── New Release Cell ────────────────────────────────────────────────────────
 
-function NewReleaseCell({ book, onSaved, allItems }: { book: BookItem; onSaved: () => void; allItems: BookItem[] }) {
-  const nextPriority = Math.max(0, ...allItems.filter(b => b.isNewRelease && b.newReleasePriority).map(b => b.newReleasePriority!)) + 1;
+function NewReleaseCell({ book, onSaved }: { book: BookItem; onSaved: () => void }) {
   const [priority, setPriority] = useState<string>(book.newReleasePriority?.toString() ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -443,18 +448,13 @@ function NewReleaseCell({ book, onSaved, allItems }: { book: BookItem; onSaved: 
   useEffect(() => { setPriority(book.newReleasePriority?.toString() ?? ""); }, [book.newReleasePriority]);
 
   const toggle = async () => {
+    if (book.quantity === 0 && !book.isNewRelease) return;
     setSaving(true);
     setError(null);
     try {
-      if (!book.isNewRelease) {
-        setPriority(String(nextPriority));
-        await booksService.toggleNewRelease(book.id, true, nextPriority);
-      } else {
-        await booksService.toggleNewRelease(book.id, false);
-      }
+      await booksService.toggleNewRelease(book.id, !book.isNewRelease);
       onSaved();
-    }
-    catch (err) { console.error("Failed to toggle new release", err); }
+    } catch (err) { console.error("Failed to toggle new release", err); }
     finally { setSaving(false); }
   };
 
@@ -462,7 +462,7 @@ function NewReleaseCell({ book, onSaved, allItems }: { book: BookItem; onSaved: 
     setError(null);
     setSaving(true);
     try {
-      await booksService.toggleNewRelease(book.id, true, priority ? parseInt(priority) : null);
+      await booksService.update(book.id, { isNewRelease: true, newReleasePriority: priority ? parseInt(priority) : null });
       onSaved();
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? err?.message ?? "";
@@ -479,9 +479,12 @@ function NewReleaseCell({ book, onSaved, allItems }: { book: BookItem; onSaved: 
       <div className="flex items-center gap-1.5">
         <button
           onClick={toggle}
-          disabled={saving}
+          disabled={saving || (book.quantity === 0 && !book.isNewRelease)}
+          title={book.quantity === 0 && !book.isNewRelease ? "Out of stock" : undefined}
           className={"rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors disabled:opacity-50 " +
-            (book.isNewRelease ? "bg-[#DBEAFE] text-[#1D4ED8] hover:bg-[#BFDBFE]" : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]")}
+            (book.quantity === 0 && !book.isNewRelease
+              ? "bg-[#F3F4F6] text-[#D1D5DB] cursor-not-allowed"
+              : book.isNewRelease ? "bg-[#DBEAFE] text-[#1D4ED8] hover:bg-[#BFDBFE]" : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]")}
         >
           {book.isNewRelease ? "🆕 Yes" : "☆ No"}
         </button>
@@ -514,8 +517,7 @@ function NewReleaseCell({ book, onSaved, allItems }: { book: BookItem; onSaved: 
 
 // ─── Best Seller Cell ─────────────────────────────────────────────────────
 
-function BestSellerCell({ book, onSaved, allItems }: { book: BookItem; onSaved: () => void; allItems: BookItem[] }) {
-  const nextPriority = Math.max(0, ...allItems.filter(b => b.isBestSeller && b.bestSellerPriority).map(b => b.bestSellerPriority!)) + 1;
+function BestSellerCell({ book, onSaved }: { book: BookItem; onSaved: () => void }) {
   const [priority, setPriority] = useState<string>(book.bestSellerPriority?.toString() ?? "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -523,18 +525,13 @@ function BestSellerCell({ book, onSaved, allItems }: { book: BookItem; onSaved: 
   useEffect(() => { setPriority(book.bestSellerPriority?.toString() ?? ""); }, [book.bestSellerPriority]);
 
   const toggle = async () => {
+    if (book.quantity === 0 && !book.isBestSeller) return;
     setSaving(true);
     setError(null);
     try {
-      if (!book.isBestSeller) {
-        setPriority(String(nextPriority));
-        await booksService.toggleBestSeller(book.id, true, nextPriority);
-      } else {
-        await booksService.toggleBestSeller(book.id, false);
-      }
+      await booksService.toggleBestSeller(book.id, !book.isBestSeller);
       onSaved();
-    }
-    catch (err) { console.error("Failed to toggle best seller", err); }
+    } catch (err) { console.error("Failed to toggle best seller", err); }
     finally { setSaving(false); }
   };
 
@@ -542,7 +539,7 @@ function BestSellerCell({ book, onSaved, allItems }: { book: BookItem; onSaved: 
     setError(null);
     setSaving(true);
     try {
-      await booksService.toggleBestSeller(book.id, true, priority ? parseInt(priority) : null);
+      await booksService.update(book.id, { isBestSeller: true, bestSellerPriority: priority ? parseInt(priority) : null });
       onSaved();
     } catch (err: any) {
       const msg = err?.response?.data?.message ?? err?.message ?? "";
@@ -559,9 +556,12 @@ function BestSellerCell({ book, onSaved, allItems }: { book: BookItem; onSaved: 
       <div className="flex items-center gap-1.5">
         <button
           onClick={toggle}
-          disabled={saving}
+          disabled={saving || (book.quantity === 0 && !book.isBestSeller)}
+          title={book.quantity === 0 && !book.isBestSeller ? "Out of stock" : undefined}
           className={"rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors disabled:opacity-50 " +
-            (book.isBestSeller ? "bg-[#FEF9C3] text-[#854D0E] hover:bg-[#FDE68A]" : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]")}
+            (book.quantity === 0 && !book.isBestSeller
+              ? "bg-[#F3F4F6] text-[#D1D5DB] cursor-not-allowed"
+              : book.isBestSeller ? "bg-[#FEF9C3] text-[#854D0E] hover:bg-[#FDE68A]" : "bg-[#F3F4F6] text-[#6B7280] hover:bg-[#E5E7EB]")}
         >
           {book.isBestSeller ? "🔥 Yes" : "☆ No"}
         </button>
@@ -666,7 +666,7 @@ function BookDetailView({ book, onClose, loading }: BookDetailViewProps) {
                 </div>
                 <div>
                   <span className="text-[#6B7280]">Publisher:</span>
-                  <span className="ml-2">{book.publisher || "—"}</span>
+                  <span className="ml-2">{book.publisher?.name || "—"}</span>
                 </div>
                 <div>
                   <span className="text-[#6B7280]">Published Year:</span>
@@ -725,11 +725,11 @@ function BookDetailView({ book, onClose, loading }: BookDetailViewProps) {
             <div className="mt-2 grid grid-cols-4 gap-4 text-[13px]">
               <div>
                 <span className="text-[#6B7280]">MRP:</span>
-                <div className="font-medium text-[#9CA3AF] line-through">₹{book.price}</div>
+                <div className="font-medium text-[#9CA3AF] line-through">{formatPrice(book.price, book.currency)}</div>
               </div>
               <div>
                 <span className="text-[#6B7280]">Selling Price:</span>
-                <div className="font-medium text-[#166534]">₹{book.discountPrice ?? book.price}</div>
+                <div className="font-medium text-[#166534]">{formatPrice(book.discountPrice ?? book.price, book.currency)}</div>
               </div>
               <div>
                 <span className="text-[#6B7280]">Stock:</span>
@@ -1074,15 +1074,15 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
                 </select>
               </Field>
               <Field label="Staff Pick">
-                <label className="flex h-8 cursor-pointer items-center gap-2 text-[12px]">
-                  <input type="checkbox" checked={!!form.isStaffPick} onChange={(e) => set("isStaffPick", e.target.checked)} className="h-3.5 w-3.5 accent-[#4F46E5]" />
-                  Mark as Staff Pick
+                <label className={"flex h-8 items-center gap-2 text-[12px] " + ((form.quantity ?? 0) === 0 ? "cursor-not-allowed opacity-50" : "cursor-pointer")}>
+                  <input type="checkbox" checked={!!form.isStaffPick} disabled={(form.quantity ?? 0) === 0} onChange={(e) => set("isStaffPick", e.target.checked)} className="h-3.5 w-3.5 accent-[#4F46E5]" />
+                  Mark as Staff Pick{(form.quantity ?? 0) === 0 && <span className="text-[10px] text-[#EF4444]">(out of stock)</span>}
                 </label>
               </Field>
               <Field label="New Release">
-                <label className="flex h-8 cursor-pointer items-center gap-2 text-[12px]">
-                  <input type="checkbox" checked={!!form.isNewRelease} onChange={(e) => set("isNewRelease", e.target.checked)} className="h-3.5 w-3.5 accent-[#4F46E5]" />
-                  Mark as New Release
+                <label className={"flex h-8 items-center gap-2 text-[12px] " + ((form.quantity ?? 0) === 0 ? "cursor-not-allowed opacity-50" : "cursor-pointer")}>
+                  <input type="checkbox" checked={!!form.isNewRelease} disabled={(form.quantity ?? 0) === 0} onChange={(e) => set("isNewRelease", e.target.checked)} className="h-3.5 w-3.5 accent-[#4F46E5]" />
+                  Mark as New Release{(form.quantity ?? 0) === 0 && <span className="text-[10px] text-[#EF4444]">(out of stock)</span>}
                 </label>
               </Field>
               {form.isNewRelease && (
@@ -1097,9 +1097,9 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
                 </Field>
               )}
               <Field label="Best Seller">
-                <label className="flex h-8 cursor-pointer items-center gap-2 text-[12px]">
-                  <input type="checkbox" checked={!!form.isBestSeller} onChange={(e) => set("isBestSeller", e.target.checked)} className="h-3.5 w-3.5 accent-[#4F46E5]" />
-                  Mark as Best Seller
+                <label className={"flex h-8 items-center gap-2 text-[12px] " + ((form.quantity ?? 0) === 0 ? "cursor-not-allowed opacity-50" : "cursor-pointer")}>
+                  <input type="checkbox" checked={!!form.isBestSeller} disabled={(form.quantity ?? 0) === 0} onChange={(e) => set("isBestSeller", e.target.checked)} className="h-3.5 w-3.5 accent-[#4F46E5]" />
+                  Mark as Best Seller{(form.quantity ?? 0) === 0 && <span className="text-[10px] text-[#EF4444]">(out of stock)</span>}
                 </label>
               </Field>
               {form.isBestSeller && (

@@ -43,6 +43,7 @@ export interface BookItem {
   publishedYear: string | null;
   pages: number | null;
   price: string;
+  currency: string | null;
   discountPrice: string | null;
   coverImage: string | null;
   coverImagePath: string | null;
@@ -128,10 +129,10 @@ export const booksService = {
   update: (id: string, data: Partial<CreateBookPayload>) => api.patch(`/books/${id}`, data).then(wrapSingle),
   updateStatus: (id: string, status: string) => api.patch(`/books/status/${id}`, { status }).then(wrap),
   toggleStaffPick: (id: string, isStaffPick: boolean) => api.patch(`/books/${id}`, { isStaffPick }).then(wrapSingle),
-  toggleNewRelease: (id: string, isNewRelease: boolean, newReleasePriority?: number | null) =>
-    api.patch(`/books/${id}`, { isNewRelease, ...(newReleasePriority !== undefined ? { newReleasePriority } : {}) }).then(wrapSingle),
-  toggleBestSeller: (id: string, isBestSeller: boolean, bestSellerPriority?: number | null) =>
-    api.patch(`/books/${id}`, { isBestSeller, ...(bestSellerPriority !== undefined ? { bestSellerPriority } : {}) }).then(wrapSingle),
+  toggleNewRelease: (id: string, isNewRelease: boolean) =>
+    api.patch(`/books/${id}`, { isNewRelease }).then(wrapSingle),
+  toggleBestSeller: (id: string, isBestSeller: boolean) =>
+    api.patch(`/books/${id}`, { isBestSeller }).then(wrapSingle),
   uploadCover: (id: string, file: File) => {
     const fd = new FormData(); fd.append("file", file);
     return api.put(`/books/cover/${id}`, fd, { headers: { "Content-Type": "multipart/form-data" } }).then(wrapSingle);

@@ -278,7 +278,10 @@ function OrderDrawer({
     } finally { setTrackLoading(false); }
   };
 
-  const sub = order.items?.reduce((s, i) => s + Number(i.price) * i.quantity, 0) ?? Number(order.subtotal);
+  const sub = order.items?.reduce((s, i) => {
+    const inr = Number(i.priceInINR ?? i.price);
+    return s + inr * i.quantity;
+  }, 0) ?? Number(order.subtotal);
 
   const row = (label: string, value: React.ReactNode) => (
     <div className="flex items-start justify-between gap-4 border-b border-[#F3F4F6] py-1.5 last:border-0">
@@ -356,21 +359,40 @@ function OrderDrawer({
               <div className="border-b border-[#F3F4F6] px-4 py-2.5 text-[12px] font-semibold">Line Items</div>
               {order.items?.length ? (
                 <table className="w-full text-[12px]">
+                  <thead>
+                    <tr className="border-t border-[#F3F4F6] bg-[#FAFAF9] text-[10px] uppercase tracking-wider text-[#6B7280]">
+                      <th className="px-4 py-2 text-left">Book</th>
+                      <th className="px-4 py-2 text-right">Unit Price</th>
+                      <th className="px-4 py-2 text-right">Qty</th>
+                      <th className="px-4 py-2 text-right">Line Total (₹)</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {order.items.map((item) => (
-                      <tr key={item.id} className="border-t border-[#F3F4F6]">
-                        <td className="px-4 py-2.5">
-                          <div className="font-medium">{item.bookTitle ?? item.bookId}</div>
-                          <div className="font-mono text-[10px] text-[#6B7280]">{item.bookId}</div>
-                        </td>
-                        <td className="px-4 py-2.5 text-right tabular-nums text-[#4B5563]">
-                          {item.quantity} × ₹{Number(item.price).toFixed(2)}
-                        </td>
-                        <td className="px-4 py-2.5 text-right font-medium tabular-nums">
-                          ₹{Number(item.total).toFixed(2)}
-                        </td>
-                      </tr>
-                    ))}
+                    {order.items.map((item) => {
+                      const cur = (item.currency ?? 'INR').toUpperCase();
+                      const inrUnit = Number(item.priceInINR ?? item.price);
+                      const isForeign = cur !== 'INR';
+                      return (
+                        <tr key={item.id} className="border-t border-[#F3F4F6]">
+                          <td className="px-4 py-2.5">
+                            <div className="font-medium">{item.bookTitle ?? item.bookId}</div>
+                            <div className="font-mono text-[10px] text-[#6B7280]">{item.bookId}</div>
+                          </td>
+                          <td className="px-4 py-2.5 text-right tabular-nums">
+                            <div className="font-medium">₹{inrUnit.toFixed(2)}</div>
+                            {isForeign && (
+                              <div className="text-[10px] text-[#6B7280]">
+                                {cur} {Number(item.price).toFixed(2)} orig.
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-2.5 text-right tabular-nums text-[#4B5563]">{item.quantity}</td>
+                          <td className="px-4 py-2.5 text-right font-medium tabular-nums">
+                            ₹{(inrUnit * item.quantity).toFixed(2)}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               ) : (

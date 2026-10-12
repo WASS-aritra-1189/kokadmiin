@@ -86,6 +86,8 @@ export interface OrderLineItem {
   bookTitle: string | null;
   quantity: number;
   price: number;
+  currency: string;
+  priceInINR: number | null;
   total: number;
 }
 

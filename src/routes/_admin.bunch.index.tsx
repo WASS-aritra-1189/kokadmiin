@@ -116,6 +116,7 @@ function Page() {
               <tr className="border-b border-[#E5E7EB] bg-[#FAFAF9]">
                 <th className="px-4 py-2 text-left">Bunch</th>
                 <th className="px-4 py-2 text-left">Class</th>
+                <th className="px-4 py-2 text-left">Stream</th>
                 <th className="px-4 py-2 text-left">Language</th>
                 <th className="px-4 py-2 text-left">Schools</th>
                 <th className="px-4 py-2 text-left">Books</th>
@@ -133,6 +134,7 @@ function Page() {
                 <tr key={item.id} className="border-b border-[#F3F4F6] last:border-0 hover:bg-[#FAFAF9]">
                   <td className="px-4 py-2.5 font-medium">{item.name}</td>
                   <td className="px-4 py-2.5 text-[#6B7280]">{item.class?.name ?? "—"}</td>
+                  <td className="px-4 py-2.5 text-[#6B7280]">{item.stream?.name ?? "—"}</td>
                   <td className="px-4 py-2.5 text-[#6B7280]">{item.language?.name ?? "—"}</td>
                   <td className="px-4 py-2.5 text-[#6B7280]">{item.schools?.length ?? 0}</td>
                   <td className="px-4 py-2.5 text-[#6B7280]">{item.books?.length ?? 0}</td>
@@ -282,8 +284,16 @@ function BunchDetailView({ bunch, onClose, loading }: { bunch: Bunch; onClose: (
               <div className="font-medium">{bunch.class?.name || "—"}</div>
             </div>
             <div>
+              <span className="text-[#6B7280]">Stream:</span>
+              <div className="font-medium">{bunch.stream?.name || "—"}</div>
+            </div>
+            <div>
               <span className="text-[#6B7280]">Language:</span>
               <div className="font-medium">{bunch.language?.name || "—"}</div>
+            </div>
+            <div>
+              <span className="text-[#6B7280]">Second Language:</span>
+              <div className="font-medium">{bunch.secondLanguage?.name || "—"}</div>
             </div>
             <div>
               <span className="text-[#6B7280]">Total Amount:</span>
@@ -392,10 +402,11 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
     description: item?.description ?? "",
     classId: item?.classId ?? "",
     languageId: item?.languageId ?? "",
+    streamId: item?.streamId ?? "",
+    secondLanguageId: item?.secondLanguageId ?? "",
     totalAmount: item?.totalAmount ?? 0,
     quantity: item?.quantity ?? 0,
     allowPartialBuy: item?.allowPartialBuy ?? false,
-    // limit: item?.limit ?? null,
     status: item?.status ?? "ACTIVE",
     schoolIds: item?.schools?.map(s => s.id) ?? [] as string[],
     bookIds: item?.books?.map(b => b.id) ?? [] as string[],
@@ -405,8 +416,18 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
 
   // Dropdown data
   const [schools, setSchools] = useState<{ id: string; name: string }[]>([]);
-  const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
+  const [schoolsPage, setSchoolsPage] = useState(1);
+  const [schoolsHasMore, setSchoolsHasMore] = useState(true);
+  const [schoolsLoading, setSchoolsLoading] = useState(false);
+  const [classes, setClasses] = useState<{ id: string; name: string; board?: { name: string } | null }[]>([]);
+  const [classesPage, setClassesPage] = useState(1);
+  const [classesHasMore, setClassesHasMore] = useState(true);
+  const [classSearch, setClassSearch] = useState("");
+  const [showClassDropdown, setShowClassDropdown] = useState(false);
+  const [classesLoading, setClassesLoading] = useState(false);
+  const classDropdownRef = useRef<HTMLDivElement>(null);
   const [languages, setLanguages] = useState<{ id: string; name: string }[]>([]);
+  const [streams, setStreams] = useState<{ id: string; name: string }[]>([]);
   const [books, setBooks] = useState<{ id: string; title: string }[]>([]);
   const [booksLoading, setBooksLoading] = useState(false);
   const [booksPage, setBooksPage] = useState(1);
@@ -455,6 +476,9 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setShowBookDropdown(false);
       }
+      if (classDropdownRef.current && !classDropdownRef.current.contains(e.target as Node)) {
+        setShowClassDropdown(false);
+      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -468,11 +492,40 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
   }, [bookSearch]);
 
   useEffect(() => {
-    schoolService.getActive().then((r) => setSchools(r ?? []));
+    loadSchools(1, false);
     api.get("/languages/active").then((r) => setLanguages((r.data as any)?.data ?? []));
+    api.get("/streams", { params: { limit: 200 } }).then((r) => setStreams((r.data as any)?.data?.data ?? []));
     loadBooks(1, false);
-    api.get("/school-classes", { params: { limit: 100 } }).then((r) => setClasses((r.data as any)?.data?.data ?? []));
+    loadClasses(1, false);
   }, []);
+
+  const loadSchools = async (page = 1, append = false) => {
+    if (schoolsLoading) return;
+    setSchoolsLoading(true);
+    try {
+      const res = await schoolService.getAllActive({ page, limit: 10 });
+      const data = res?.data ?? [];
+      setSchools(prev => append ? [...prev, ...data.filter(s => !prev.some(p => p.id === s.id))] : data);
+      setSchoolsHasMore((res?.total ?? 0) > page * 10);
+      setSchoolsPage(page);
+    } catch { /* ignore */ } finally {
+      setSchoolsLoading(false);
+    }
+  };
+
+  const loadClasses = async (page = 1, append = false) => {
+    setClassesLoading(true);
+    try {
+      const params: any = { limit: 100, page };
+      if (classSearch) params.search = classSearch;
+      const r = await api.get("/school-classes", { params });
+      const data: { id: string; name: string; board?: { name: string } | null }[] = (r.data as any)?.data?.data ?? [];
+      setClasses(prev => append ? [...prev, ...data.filter(c => !prev.some(p => p.id === c.id))] : data);
+      setClassesHasMore(data.length === 100);
+    } finally { setClassesLoading(false); }
+  };
+
+  useEffect(() => { setClassesPage(1); setClassesHasMore(true); loadClasses(1, false); }, [classSearch]);
 
   const toggleId = (key: "schoolIds" | "bookIds", id: string) => {
     setForm(f => ({
@@ -501,12 +554,13 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
         await bunchService.update(item.id, {
           name: form.name,
           description: form.description || undefined,
-          classId: form.classId,
+          classId: form.classId || null,
           languageId: form.languageId,
+          streamId: form.streamId || null,
+          secondLanguageId: form.secondLanguageId || null,
           totalAmount: Number(form.totalAmount),
           quantity: Number(form.quantity),
           allowPartialBuy: form.allowPartialBuy,
-          // limit: form.limit,
           status: form.status,
           schoolIds: form.schoolIds,
           bookIds: form.bookIds,
@@ -515,12 +569,13 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
         await bunchService.create({
           name: form.name,
           description: form.description || undefined,
-          classId: form.classId,
+          classId: form.classId || undefined,
           languageId: form.languageId,
+          streamId: form.streamId || undefined,
+          secondLanguageId: form.secondLanguageId || undefined,
           totalAmount: Number(form.totalAmount),
           quantity: Number(form.quantity),
           allowPartialBuy: form.allowPartialBuy,
-          // limit: form.limit,
           schoolIds: form.schoolIds,
           bookIds: form.bookIds,
           status: form.status,
@@ -555,17 +610,67 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
                 <label className="mb-1 block text-[11px] font-medium text-[#374151]">Bunch name *</label>
                 <input required value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Class 10 CBSE Bundle" className={inp} />
               </div>
-              <div>
-                <label className="mb-1 block text-[11px] font-medium text-[#374151]">Class *</label>
-                <select required value={form.classId} onChange={(e) => setForm(f => ({ ...f, classId: e.target.value }))} className={inp}>
-                  <option value="">Select class…</option>
-                  {classes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                </select>
+              <div className="relative" ref={classDropdownRef}>
+                <label className="mb-1 block text-[11px] font-medium text-[#374151]">Class</label>
+                <button type="button" onClick={() => setShowClassDropdown(v => !v)}
+                  className={inp + " flex items-center justify-between text-left"}>
+                  <span className={form.classId ? "" : "text-[#9CA3AF]"}>
+                    {form.classId
+                      ? (classes.find(c => c.id === form.classId)?.name ?? 'Selected')
+                      : "No class (optional)"}
+                  </span>
+                  <Search className="h-3 w-3 text-[#9CA3AF] shrink-0" />
+                </button>
+                {showClassDropdown && (
+                  <div className="absolute z-50 mt-1 w-full rounded-md border border-[#E5E7EB] bg-white shadow-lg">
+                    <div className="border-b border-[#E5E7EB] p-1.5">
+                      <input autoFocus value={classSearch} onChange={e => setClassSearch(e.target.value)}
+                        placeholder="Search classes…" className="h-7 w-full rounded px-2 text-[12px] outline-none" />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto"
+                      onScroll={(e) => {
+                        const el = e.currentTarget;
+                        if (!classesLoading && classesHasMore && el.scrollHeight - el.scrollTop - el.clientHeight < 40) {
+                          const next = classesPage + 1;
+                          setClassesPage(next);
+                          loadClasses(next, true);
+                        }
+                      }}>
+                      <div className="cursor-pointer px-3 py-1.5 text-[12px] text-[#9CA3AF] hover:bg-[#F9FAFB]"
+                        onClick={() => { setForm(f => ({ ...f, classId: "" })); setShowClassDropdown(false); setClassSearch(""); }}>
+                        No class (optional)
+                      </div>
+                      {classes.map(c => (
+                        <div key={c.id}
+                          onClick={() => { setForm(f => ({ ...f, classId: c.id })); setShowClassDropdown(false); setClassSearch(""); }}
+                          className={`cursor-pointer px-3 py-1.5 text-[12px] hover:bg-[#F9FAFB] ${form.classId === c.id ? "bg-[#EEF2FF] font-medium text-[#4F46E5]" : ""}` }>
+                          {c.name}
+                        </div>
+                      ))}
+                      {classesLoading && <div className="px-3 py-2 text-[11px] text-[#9CA3AF]">Loading…</div>}
+                      {!classesLoading && !classesHasMore && classes.length === 0 && <div className="px-3 py-2 text-[11px] text-[#9CA3AF]">No classes found.</div>}
+                    </div>
+                  </div>
+                )}
               </div>
               <div>
                 <label className="mb-1 block text-[11px] font-medium text-[#374151]">Language *</label>
                 <select required value={form.languageId} onChange={(e) => setForm(f => ({ ...f, languageId: e.target.value }))} className={inp}>
                   <option value="">Select language…</option>
+                  {languages.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-[#374151]">Stream</label>
+                <select value={form.streamId} onChange={(e) => setForm(f => ({ ...f, streamId: e.target.value }))} className={inp}>
+                  <option value="">No stream (optional)</option>
+                  {streams.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-[11px] font-medium text-[#374151]">Second Language</label>
+                <select value={form.secondLanguageId} onChange={(e) => setForm(f => ({ ...f, secondLanguageId: e.target.value }))} className={inp}>
+                  <option value="">None (optional)</option>
                   {languages.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
                 </select>
               </div>
@@ -609,8 +714,16 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
               <label className="mb-1 block text-[11px] font-medium text-[#374151]">
                 Schools * <span className="text-[#6B7280]">({form.schoolIds.length} selected)</span>
               </label>
-              <div className="max-h-36 overflow-y-auto rounded-md border border-[#E5E7EB] bg-white p-2 space-y-1">
-                {schools.length === 0 && <div className="text-[11px] text-[#9CA3AF]">No active schools found</div>}
+              <div
+                className="max-h-36 overflow-y-auto rounded-md border border-[#E5E7EB] bg-white p-2 space-y-1"
+                onScroll={(e) => {
+                  const el = e.currentTarget;
+                  if (!schoolsLoading && schoolsHasMore && el.scrollHeight - el.scrollTop - el.clientHeight < 40) {
+                    loadSchools(schoolsPage + 1, true);
+                  }
+                }}
+              >
+                {schools.length === 0 && !schoolsLoading && <div className="text-[11px] text-[#9CA3AF]">No active schools found</div>}
                 {schools.map((s) => (
                   <label key={s.id} className="flex cursor-pointer items-center gap-2 rounded px-1 py-0.5 hover:bg-[#F9FAFB]">
                     <input
@@ -622,6 +735,7 @@ function BunchSheet({ item, onClose, onSaved }: { item: Bunch | null; onClose: (
                     <span className="text-[12px]">{s.name}</span>
                   </label>
                 ))}
+                {schoolsLoading && <div className="px-1 py-1 text-[11px] text-[#9CA3AF]">Loading…</div>}
               </div>
             </div>
 

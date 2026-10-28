@@ -29,6 +29,7 @@ function GeneralSettings() {
     companyCity: "",
     companyGstin: "",
     freeShippingAmount: 499,
+    showBunchButton: true,
   });
 
   useEffect(() => {
@@ -57,10 +58,10 @@ function GeneralSettings() {
           companyCity: settingData.companyCity || "",
           companyGstin: settingData.companyGstin || "",
           freeShippingAmount: settingData.freeShippingAmount || 499,
+          showBunchButton: settingData.showBunchButton ?? true,
         });
       }
     } catch (error) {
-      console.error("Failed to load settings:", error);
     } finally {
       setLoading(false);
     }
@@ -89,7 +90,6 @@ function GeneralSettings() {
       }
       await loadSettings();
     } catch (error: any) {
-      console.error("Failed to save settings:", error);
       const msg = error?.response?.data?.data?.errors?.[0] || error?.response?.data?.message || "Failed to save settings";
       toast.error(msg);
     } finally {
@@ -291,6 +291,17 @@ function GeneralSettings() {
             placeholder="499" 
           />
         </Field>
+      </Section>
+
+      <Section title="Header Features" description="Control which buttons and links appear in the storefront header.">
+        <div className="grid gap-2">
+          <Toggle
+            label="Show Bunches button"
+            checked={formData.showBunchButton}
+            onChange={(val) => updateField("showBunchButton", val as any)}
+            description={`The "Bunches" link in the header navigation. Currently ${formData.showBunchButton ? "visible" : "hidden"} on the storefront.`}
+          />
+        </div>
       </Section>
 
       <Section title="Support contact" description="Shown on invoices, packing slips and transactional emails.">

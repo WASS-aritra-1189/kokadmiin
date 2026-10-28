@@ -14,6 +14,17 @@ export interface Customer {
   bio?: string;
   isActive: boolean;
   accountId: string;
+  userId?: string;
+  totalOrders: number;
+  defaultAddress?: {
+    addressLine1?: string;
+    addressLine2?: string;
+    city?: string;
+    state?: string;
+    country?: string;
+    pincode?: string;
+    isDefault?: boolean;
+  };
 }
 
 export interface CustomersResponse {
@@ -88,4 +99,7 @@ export const customersService = {
 
   getById: (id: string) =>
     api.get(`/accounts/users/${id}`).then((r) => r.data),
+
+  getFullProfile: (accountId: string) =>
+    api.get(`/customer-profile/${accountId}`).then((r) => r.data),
 };

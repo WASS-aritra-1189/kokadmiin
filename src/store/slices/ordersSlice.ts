@@ -20,9 +20,13 @@ const initialState: OrdersState = {
 };
 
 export const fetchOrders = createAsyncThunk("orders/fetchAll", async (params: OrdersQuery, { rejectWithValue }) => {
+  console.log("[ORDERS SLICE] fetchOrders called with params:", params);
   try {
-    return await ordersService.getAll(params) as { data: Order[]; total: number; page: number; limit: number };
+    const result = await ordersService.getAll(params) as { data: Order[]; total: number; page: number; limit: number };
+    console.log("[ORDERS SLICE] fetchOrders successful, got:", result.data?.length, "orders");
+    return result;
   } catch (err: any) {
+    console.error("[ORDERS SLICE] fetchOrders failed:", err);
     return rejectWithValue(err.response?.data?.message ?? "Failed to fetch orders");
   }
 });

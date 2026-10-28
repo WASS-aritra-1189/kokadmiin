@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { X, Save } from "lucide-react";
+import { Save } from "lucide-react";
+import { toast } from "sonner";
 import { designationService, type Designation } from "@/services/designation.service";
 import { menuService, type Menu } from "@/services/menu.service";
 import { designationPermissionService, type MenuItem } from "@/services/permission.service";
@@ -16,8 +17,6 @@ function DesignationPermissionsPage() {
   const [permissions, setPermissions] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   // All permission types available
   const permissionTypes = ["CREATE", "READ", "UPDATE", "DELETE"];
@@ -32,8 +31,8 @@ function DesignationPermissionsPage() {
         ]);
         setDesignations(desRes?.data ?? []);
         setMenus(menuRes?.data ?? []);
-      } catch (err) {
-        console.error("Failed to load data", err);
+      } catch {
+        toast.error("Failed to load designations and menus");
       }
     })();
   }, []);
@@ -78,8 +77,8 @@ function DesignationPermissionsPage() {
           }));
 
         setPermissions(items);
-      } catch (err) {
-        console.error("Failed to load permissions", err);
+      } catch {
+        toast.error("Failed to load permissions");
       } finally {
         setLoading(false);
       }
@@ -106,28 +105,24 @@ function DesignationPermissionsPage() {
     if (!selectedDesignation) return;
     
     setSaving(true);
-    setError(null);
-    setSuccess(null);
 
     try {
-      // Build list of permissions to send - needs valid UUIDs and enabled status
+      // Build list of permissions to send - ALL permissions (enabled and disabled)
       const permList: { id: string; status: boolean }[] = [];
       
       for (const menuItem of permissions) {
         for (const p of menuItem.permissions) {
-          // Only include enabled permissions that have valid UUID ids
-          if (p.status && p.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(p.id)) {
-            permList.push({ id: p.id, status: true });
+          // Include ALL permissions with valid UUID ids
+          if (p.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(p.id)) {
+            permList.push({ id: p.id, status: p.status });
           }
         }
       }
 
-      console.log('Saving permissions:', permList);
       await designationPermissionService.updatePermissions(selectedDesignation, permList);
-      setSuccess("Permissions saved successfully!");
+      toast.success("Permissions saved successfully");
     } catch (err: any) {
-      console.error(err);
-      setError(err?.response?.data?.message ?? err?.message ?? "Failed to save permissions");
+      toast.error(err?.response?.data?.data?.errors?.[0] ?? err?.response?.data?.message ?? err?.message ?? "Failed to save permissions");
     } finally {
       setSaving(false);
     }
@@ -155,9 +150,6 @@ function DesignationPermissionsPage() {
           ))}
         </select>
       </div>
-
-      {error && <div className="mb-4 rounded-2xl border border-[#FEE2E2] bg-[#FEF2F2] px-4 py-3 text-[12px] text-[#B91C1C]">{error}</div>}
-      {success && <div className="mb-4 rounded-2xl border border-[#D1FAE5] bg-[#ECFDF5] px-4 py-3 text-[12px] text-[#065F46]">{success}</div>}
 
       {selectedDesignation && (
         <div className="overflow-hidden rounded-3xl border border-[#E5E7EB] bg-white shadow-sm">

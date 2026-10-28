@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, Search, X, Edit3, Trash2 } from "lucide-react";
@@ -104,7 +105,7 @@ function MenusPage() {
                             await menuService.delete(item.id);
                             load(page, q);
                           } catch (err: any) {
-                            alert(err?.response?.data?.message ?? "Failed to delete menu");
+                            toast.error(err?.response?.data?.message ?? "Failed to delete menu");
                           }
                         }}
                         className="inline-flex h-8 items-center gap-2 rounded-full border border-[#FEE2E2] bg-white px-3 text-[11px] font-medium text-[#DC2626] hover:bg-[#FEF2F2]"
@@ -147,19 +148,17 @@ function MenuSheet({ item, onClose, onSaved }: { item: Menu | null; onClose: () 
     description: item?.description ?? "",
   });
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const setField = (key: keyof MenuPayload, value: string) => setForm((f) => ({ ...f, [key]: value }));
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!form.name || !form.title) {
-      setError("Name and title are required");
+      toast.error("Name and title are required");
       return;
     }
 
     setSaving(true);
-    setError(null);
 
     try {
       if (isEdit && item) {
@@ -169,7 +168,7 @@ function MenuSheet({ item, onClose, onSaved }: { item: Menu | null; onClose: () 
       }
       onSaved();
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? err?.message ?? "Unable to save menu.");
+      toast.error(err?.response?.data?.message ?? err?.message ?? "Unable to save menu.");
     } finally {
       setSaving(false);
     }
@@ -188,7 +187,6 @@ function MenuSheet({ item, onClose, onSaved }: { item: Menu | null; onClose: () 
 
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
-            {error && <div className="rounded-2xl border border-[#FEE2E2] bg-[#FEF2F2] px-4 py-3 text-[12px] text-[#B91C1C]">{error}</div>}
 
             <div>
               <label className="mb-1 block text-[11px] font-medium text-[#374151]">Menu Name *</label>

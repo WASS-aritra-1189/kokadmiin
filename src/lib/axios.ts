@@ -8,6 +8,12 @@ export const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  console.log("[AXIOS] Making API request:", {
+    url: config.url,
+    method: config.method,
+    params: config.params,
+    data: config.data,
+  });
   if (typeof window !== "undefined") {
     const raw = localStorage.getItem("bookadmin.token");
     if (raw) config.headers.Authorization = `Bearer ${raw}`;
@@ -16,8 +22,21 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    console.log("[AXIOS] API response received:", {
+      url: res.config.url,
+      status: res.status,
+      data: res.data,
+    });
+    return res;
+  },
   (err) => {
+    console.error("[AXIOS] API request failed:", {
+      url: err.config?.url,
+      method: err.config?.method,
+      status: err.response?.status,
+      error: err.message,
+    });
     if (typeof window !== "undefined" && err.response?.status === 401) {
       localStorage.removeItem("bookadmin.token");
       localStorage.removeItem("bookadmin.user");

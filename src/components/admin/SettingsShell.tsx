@@ -11,7 +11,6 @@ export type SettingsNavItem = { label: string; to: string; icon: LucideIcon; des
 
 export const SETTINGS_NAV: SettingsNavItem[] = [
   { label: "General", to: "/settings/general", icon: Settings2, desc: "Site name, timezone, defaults" },
-  
 ];
 
 export function SettingsShell({
@@ -187,19 +186,30 @@ export function Toggle({
   label,
   description,
   defaultChecked,
+  checked,
+  onChange,
+  disabled,
 }: {
   label: string;
   description?: string;
   defaultChecked?: boolean;
+  checked?: boolean;
+  onChange?: (val: boolean) => void;
+  disabled?: boolean;
 }) {
+  const controlled = checked !== undefined;
   return (
-    <label className="flex cursor-pointer items-start justify-between gap-4 rounded-lg border border-[#E5E7EB] bg-[#FAFAF9] p-3 hover:bg-white">
+    <label className={`flex cursor-pointer items-start justify-between gap-4 rounded-lg border border-[#E5E7EB] bg-[#FAFAF9] p-3 hover:bg-white ${disabled ? "opacity-60 pointer-events-none" : ""}`}>
       <div>
         <div className="text-[12.5px] font-medium text-[#111827]">{label}</div>
         {description && <div className="mt-0.5 text-[11.5px] text-[#6B7280]">{description}</div>}
       </div>
       <span className="relative inline-flex h-5 w-9 shrink-0 items-center">
-        <input type="checkbox" defaultChecked={defaultChecked} className="peer sr-only" />
+        <input
+          type="checkbox"
+          {...(controlled ? { checked, onChange: (e) => onChange?.(e.target.checked) } : { defaultChecked })}
+          className="peer sr-only"
+        />
         <span className="h-5 w-9 rounded-full bg-[#E5E7EB] transition peer-checked:bg-[#4F46E5]" />
         <span className="absolute left-0.5 h-4 w-4 rounded-full bg-white shadow transition peer-checked:translate-x-4" />
       </span>

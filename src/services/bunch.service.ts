@@ -114,7 +114,7 @@ export const bunchService = {
 };
 
 export const bunchOrderService = {
-  getAll: (params: { page?: number; limit?: number; search?: string }) =>
+  getAll: (params: { page?: number; limit?: number; search?: string; accountId?: string }) =>
     api.get("/bunch-orders", { params }).then(wrapPaginated),
   findOne: (id: string) => api.get(`/bunch-orders/${id}`).then(wrap),
   schedulePickup: (id: string, pickupDate?: string) =>

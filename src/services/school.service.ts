@@ -48,7 +48,7 @@ export interface PaginatedResponse<T> {
 }
 
 export const schoolService = {
-  getAll: (params: { page?: number; limit?: number; search?: string; status?: string }) =>
+  getAll: (params: { page?: number; limit?: number; search?: string; status?: string; showInEcommerce?: boolean }) =>
     api.get<ApiResponse<PaginatedResponse<School>>>("/schools", { params })
       .then(res => res.data.data),
   

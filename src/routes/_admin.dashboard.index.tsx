@@ -1,11 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import * as XLSX from 'xlsx';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell, Pie, PieChart } from "recharts";
-import { ArrowDownRight, ArrowUpRight, Package, ShoppingBag, Wallet, AlertTriangle } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Package, ShoppingBag, Wallet, AlertTriangle, Download, FileText, FileSpreadsheet } from "lucide-react";
 import { dashboardService } from "@/services/dashboard.service";
 import { useState } from "react";
+import { DashboardDateFilter, defaultDashboardDate, type DashboardDateState } from "@/components/ui/dashboard-date-filter";
 
-function currency(v: number) { return new Intl.NumberFormat("en-IN", { style: "currency", currency: "IND" }).format(v); }
+function currency(v: number) { return "Rs. " + Number(v).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
 export const Route = createFileRoute("/_admin/dashboard/")({
   component: DashboardPage,
@@ -20,11 +22,285 @@ const statusColors: Record<string, string> = {
   Shipped: "#0EA5E9", Delivered: "#10B981", Returned: "#EF4444", Cancelled: "#6B7280",
 };
 
+function buildDashboardRows(data: any) {
+  const period = '';
+  const summaryRows = [
+    { label: 'Total Revenue', value: `Rs. ${Number(data?.totalRevenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` },
+    { label: 'Total Orders', value: String(data?.totalOrders || 0) },
+    { label: 'Avg. Order Value', value: `Rs. ${Number(data?.averageOrderValue || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` },
+    { label: 'Total Books', value: String(data?.totalBooks || 0) },
+    { label: 'Total Stock Units', value: String(data?.totalStock || 0) },
+    { label: 'Bunches', value: String(data?.totalBunch || 0) },
+    { label: 'Bunch Orders', value: String(data?.totalBunchOrders || 0) },
+  ];
+  const statusRows = (data?.orderByStatus || []).map((s: any) => ({
+    status: s.status,
+    count: Number(s.count),
+    share: data?.totalOrders ? `${((s.count / data.totalOrders) * 100).toFixed(1)}%` : '0%',
+  }));
+  const trendRows = (data?.revenueGraph?.labels || []).map((label: string, i: number) => ({
+    date: label,
+    orders: data?.revenueGraph?.datasets?.[1]?.data?.[i] ?? '-',
+    revenue: Number(data.revenueGraph.datasets?.[0]?.data?.[i] || 0),
+    revenueFormatted: `Rs. ${Number(data.revenueGraph.datasets?.[0]?.data?.[i] || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+  }));
+  const topBooksRows = (data?.topSellingBooks || []).map((b: any, i: number) => ({
+    rank: i + 1,
+    title: b.title ?? '',
+    author: b.author ?? '-',
+    category: b.category ?? '-',
+    price: b.price ? `Rs. ${Number(b.price).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-',
+    totalSold: Number(b.totalSold ?? 0),
+    revenue: b.price ? `Rs. ${(Number(b.price) * Number(b.totalSold ?? 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-',
+  }));
+  const recentRows = (data?.recentOrders || []).map((o: any) => ({
+    orderNumber: o.orderNumber ?? '',
+    customer: o.customer?.name ?? '',
+    email: o.customer?.email ?? '',
+    phone: o.customer?.phone ?? '-',
+    paymentMethod: o.paymentMethod ?? '',
+    status: o.status ?? '',
+    items: o.itemCount ?? '-',
+    total: `Rs. ${Number(o.paidAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`,
+    date: o.createdAt ? new Date(o.createdAt).toLocaleDateString('en-IN') : '-',
+  }));
+  return { summaryRows, statusRows, trendRows, topBooksRows, recentRows };
+}
+
+// Draw a simple bar chart onto the PDF canvas using jsPDF line/rect primitives
+function drawBarChart(
+  doc: any,
+  data: { label: string; value: number }[],
+  x: number, y: number, w: number, h: number,
+  color: [number, number, number],
+) {
+  if (!data.length) return;
+  const max = Math.max(...data.map(d => d.value), 1);
+  const barW = Math.floor((w - (data.length - 1) * 2) / data.length);
+  // axis
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.3);
+  doc.line(x, y, x, y + h);
+  doc.line(x, y + h, x + w, y + h);
+  // bars
+  doc.setFillColor(...color);
+  data.forEach((d, i) => {
+    const bh = Math.max(1, (d.value / max) * (h - 6));
+    const bx = x + i * (barW + 2);
+    const by = y + h - bh;
+    doc.rect(bx, by, barW, bh, 'F');
+    // label
+    doc.setFontSize(5.5);
+    doc.setTextColor(120, 120, 120);
+    const lbl = d.label.length > 5 ? d.label.slice(0, 5) : d.label;
+    doc.text(lbl, bx + barW / 2, y + h + 4, { align: 'center' });
+  });
+  doc.setTextColor(0, 0, 0);
+}
+
+async function exportDashboardPDF(data: any, date: DashboardDateState) {
+  const [{ jsPDF }, { applyPlugin }] = await Promise.all([
+    import('jspdf'),
+    import('jspdf-autotable'),
+  ]);
+  applyPlugin(jsPDF);
+
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const pw = doc.internal.pageSize.getWidth();
+  const period = date.preset === 'custom' ? `${date.startDate} to ${date.endDate}` : date.preset.replace(/_/g, ' ');
+  const generated = new Date().toLocaleString('en-IN');
+  const { summaryRows, statusRows, trendRows, topBooksRows, recentRows } = buildDashboardRows(data);
+
+  // ── Page 1: Header + KPI boxes + Revenue bar chart + Status table ──────────
+  // Header band
+  doc.setFillColor(17, 24, 39);
+  doc.rect(0, 0, pw, 18, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(13);
+  doc.setFont('helvetica', 'bold');
+  doc.text('KOK Books — Dashboard Overview', 14, 11);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Period: ${period}`, pw - 14, 8, { align: 'right' });
+  doc.text(`Generated: ${generated}`, pw - 14, 13, { align: 'right' });
+  doc.setTextColor(0, 0, 0);
+
+  // KPI boxes — 4 across
+  const kpis = [
+    { label: 'Total Revenue', value: summaryRows[0].value, color: [79, 70, 229] as [number,number,number] },
+    { label: 'Total Orders', value: summaryRows[1].value, color: [14, 165, 233] as [number,number,number] },
+    { label: 'Avg. Order Value', value: summaryRows[2].value, color: [16, 185, 129] as [number,number,number] },
+    { label: 'Total Stock', value: summaryRows[4].value, color: [245, 158, 11] as [number,number,number] },
+  ];
+  const boxW = (pw - 28 - 9) / 4;
+  kpis.forEach((kpi, i) => {
+    const bx = 14 + i * (boxW + 3);
+    const by = 22;
+    doc.setFillColor(248, 249, 252);
+    doc.roundedRect(bx, by, boxW, 20, 2, 2, 'F');
+    doc.setDrawColor(...kpi.color);
+    doc.setLineWidth(0.8);
+    doc.line(bx, by, bx + boxW, by); // top accent line
+    doc.setLineWidth(0.2);
+    doc.setDrawColor(230, 230, 230);
+    doc.roundedRect(bx, by, boxW, 20, 2, 2, 'S');
+    doc.setFontSize(7);
+    doc.setTextColor(107, 114, 128);
+    doc.setFont('helvetica', 'normal');
+    doc.text(kpi.label.toUpperCase(), bx + boxW / 2, by + 7, { align: 'center' });
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...kpi.color);
+    doc.text(kpi.value, bx + boxW / 2, by + 15, { align: 'center' });
+  });
+  doc.setTextColor(0, 0, 0);
+
+  // Secondary KPI row — Books, Bunches, Bunch Orders
+  const kpis2 = [
+    { label: 'Total Books', value: summaryRows[3].value },
+    { label: 'Bunches', value: summaryRows[5].value },
+    { label: 'Bunch Orders', value: summaryRows[6].value },
+  ];
+  const box2W = (pw - 28 - 6) / 3;
+  kpis2.forEach((kpi, i) => {
+    const bx = 14 + i * (box2W + 3);
+    const by = 45;
+    doc.setFillColor(248, 249, 252);
+    doc.roundedRect(bx, by, box2W, 12, 1.5, 1.5, 'F');
+    doc.setDrawColor(230, 230, 230);
+    doc.setLineWidth(0.2);
+    doc.roundedRect(bx, by, box2W, 12, 1.5, 1.5, 'S');
+    doc.setFontSize(6.5);
+    doc.setTextColor(107, 114, 128);
+    doc.setFont('helvetica', 'normal');
+    doc.text(kpi.label, bx + 4, by + 5);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(17, 24, 39);
+    doc.text(kpi.value, bx + 4, by + 10);
+  });
+  doc.setTextColor(0, 0, 0);
+
+  // Revenue bar chart
+  const chartY = 62;
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(17, 24, 39);
+  doc.text('Revenue Trend', 14, chartY - 2);
+  doc.setFont('helvetica', 'normal');
+  if (trendRows.length) {
+    drawBarChart(doc, trendRows.map(r => ({ label: r.date, value: r.revenue })), 14, chartY, pw / 2 - 20, 38, [79, 70, 229]);
+  } else {
+    doc.setFontSize(7); doc.setTextColor(150, 150, 150);
+    doc.text('No trend data for this period.', 14, chartY + 20);
+  }
+
+  // Orders by status table (right side of page 1)
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(17, 24, 39);
+  doc.text('Orders by Status', pw / 2 + 4, chartY - 2);
+  if (statusRows.length) {
+    (doc as any).autoTable({
+      startY: chartY,
+      margin: { left: pw / 2 + 4, right: 14 },
+      head: [['Status', 'Count', 'Share']],
+      body: statusRows.map(r => [r.status, r.count, r.share]),
+      styles: { fontSize: 7.5, cellPadding: 2 },
+      headStyles: { fillColor: [17, 24, 39], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [249, 250, 251] },
+      columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } },
+    });
+  }
+
+  // ── Page 2: Revenue trend detail table ─────────────────────────────────────
+  if (trendRows.length) {
+    doc.addPage();
+    doc.setFillColor(17, 24, 39);
+    doc.rect(0, 0, pw, 14, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+    doc.text('Revenue Trend — Detail', 14, 9);
+    doc.setTextColor(0, 0, 0);
+    (doc as any).autoTable({
+      startY: 18,
+      margin: { left: 14, right: 14 },
+      head: [['Date', 'Revenue']],
+      body: trendRows.map(r => [r.date, r.revenueFormatted]),
+      styles: { fontSize: 8, cellPadding: 2.5 },
+      headStyles: { fillColor: [79, 70, 229], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [238, 242, 255] },
+      columnStyles: { 1: { halign: 'right' } },
+    });
+  }
+
+  // ── Page 3: Top selling books ───────────────────────────────────────────────
+  if (topBooksRows.length) {
+    doc.addPage();
+    doc.setFillColor(17, 24, 39);
+    doc.rect(0, 0, pw, 14, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+    doc.text('Top Selling Books', 14, 9);
+    doc.setTextColor(0, 0, 0);
+    (doc as any).autoTable({
+      startY: 18,
+      margin: { left: 14, right: 14 },
+      head: [['#', 'Title', 'Author', 'Category', 'Price', 'Units Sold', 'Est. Revenue']],
+      body: topBooksRows.map(r => [r.rank, r.title, r.author, r.category, r.price, r.totalSold, r.revenue]),
+      styles: { fontSize: 7.5, cellPadding: 2 },
+      headStyles: { fillColor: [16, 185, 129], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [240, 253, 244] },
+      columnStyles: { 0: { halign: 'center', cellWidth: 8 }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' } },
+    });
+  }
+
+  // ── Page 4: Recent orders ───────────────────────────────────────────────────
+  if (recentRows.length) {
+    doc.addPage();
+    doc.setFillColor(17, 24, 39);
+    doc.rect(0, 0, pw, 14, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(10); doc.setFont('helvetica', 'bold');
+    doc.text('Recent Orders', 14, 9);
+    doc.setTextColor(0, 0, 0);
+    (doc as any).autoTable({
+      startY: 18,
+      margin: { left: 14, right: 14 },
+      head: [['Order #', 'Customer', 'Email', 'Payment', 'Status', 'Total', 'Date']],
+      body: recentRows.map(r => [r.orderNumber, r.customer, r.email, r.paymentMethod, r.status, r.total, r.date]),
+      styles: { fontSize: 7.5, cellPadding: 2 },
+      headStyles: { fillColor: [14, 165, 233], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [240, 249, 255] },
+      columnStyles: { 5: { halign: 'right' } },
+    });
+  }
+
+  // Page numbers
+  const totalPages = (doc as any).internal.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    doc.setFontSize(7);
+    doc.setTextColor(150, 150, 150);
+    doc.text(`Page ${p} of ${totalPages}`, pw - 14, doc.internal.pageSize.getHeight() - 5, { align: 'right' });
+    doc.text('KOK Books — Confidential', 14, doc.internal.pageSize.getHeight() - 5);
+  }
+
+  doc.save(`dashboard-${period.replace(/\s+/g, '-')}.pdf`);
+}
+
 function DashboardPage() {
-  const [filter, setFilter] = useState("today");
+  const [date, setDate] = useState<DashboardDateState>(defaultDashboardDate("today"));
+
+  const isCustomReady = date.preset !== "custom" || (!!date.startDate && !!date.endDate);
+
   const { data, isLoading } = useQuery({
-    queryKey: ["dashboard-overview", filter],
-    queryFn: () => dashboardService.getOverview({ filter }),
+    queryKey: ["dashboard-overview", date],
+    queryFn: () => dashboardService.getOverview({
+      filter: date.preset,
+      ...(date.preset === "custom" ? { startDate: date.startDate, endDate: date.endDate } : {}),
+    }),
+    enabled: isCustomReady,
   });
 
   const revenueSeries = data?.revenueGraph?.labels?.map((label: string, i: number) => ({
@@ -37,6 +313,55 @@ function DashboardPage() {
   const topBooks = data?.topSellingBooks?.slice(0, 6) || [];
   const recent = data?.recentOrders?.slice(0, 6) || [];
 
+  const handleExportPDF = () => { exportDashboardPDF(data, date); };
+
+  const handleExportExcel = () => {
+    const { summaryRows, statusRows, trendRows, topBooksRows, recentRows } = buildDashboardRows(data);
+    const period = date.preset === 'custom' ? `${date.startDate} to ${date.endDate}` : date.preset;
+    const wb = XLSX.utils.book_new();
+
+    // Summary sheet with styled header row
+    const summarySheet = XLSX.utils.json_to_sheet(summaryRows);
+    summarySheet['!cols'] = [{ wch: 28 }, { wch: 22 }];
+    XLSX.utils.book_append_sheet(wb, summarySheet, 'Summary');
+
+    // Order status with share
+    if (statusRows.length) {
+      const statusSheet = XLSX.utils.json_to_sheet(statusRows.map(r => ({ Status: r.status, Count: r.count, 'Share (%)': r.share })));
+      statusSheet['!cols'] = [{ wch: 22 }, { wch: 10 }, { wch: 12 }];
+      XLSX.utils.book_append_sheet(wb, statusSheet, 'Order Status');
+    }
+
+    // Revenue trend
+    if (trendRows.length) {
+      const trendSheet = XLSX.utils.json_to_sheet(trendRows.map(r => ({ Date: r.date, 'Revenue (Rs.)': r.revenue })));
+      trendSheet['!cols'] = [{ wch: 18 }, { wch: 18 }];
+      XLSX.utils.book_append_sheet(wb, trendSheet, 'Revenue Trend');
+    }
+
+    // Top books with all columns
+    if (topBooksRows.length) {
+      const booksSheet = XLSX.utils.json_to_sheet(topBooksRows.map(r => ({
+        '#': r.rank, Title: r.title, Author: r.author, Category: r.category,
+        'Price (Rs.)': r.price, 'Units Sold': r.totalSold, 'Est. Revenue': r.revenue,
+      })));
+      booksSheet['!cols'] = [{ wch: 4 }, { wch: 40 }, { wch: 20 }, { wch: 16 }, { wch: 14 }, { wch: 12 }, { wch: 18 }];
+      XLSX.utils.book_append_sheet(wb, booksSheet, 'Top Books');
+    }
+
+    // Recent orders with all columns
+    if (recentRows.length) {
+      const ordersSheet = XLSX.utils.json_to_sheet(recentRows.map(r => ({
+        'Order #': r.orderNumber, Customer: r.customer, Email: r.email, Phone: r.phone,
+        Payment: r.paymentMethod, Status: r.status, 'Total (Rs.)': r.total, Date: r.date,
+      })));
+      ordersSheet['!cols'] = [{ wch: 16 }, { wch: 22 }, { wch: 28 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 16 }, { wch: 14 }];
+      XLSX.utils.book_append_sheet(wb, ordersSheet, 'Recent Orders');
+    }
+
+    XLSX.writeFile(wb, `dashboard-${period}.xlsx`);
+  };
+
   if (isLoading) return <div className="p-6">Loading...</div>;
 
   return (
@@ -48,17 +373,20 @@ function DashboardPage() {
           <p className="mt-1 text-[13px] text-[#6B7280]">Real-time performance across your bookstore.</p>
         </div>
         <div className="flex items-center gap-2 text-[12px]">
-          <select 
-            className="h-8 rounded-md border border-[#E5E7EB] bg-white px-2 text-[12px]"
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-          >
-            <option value="today">Today</option>
-            <option value="last_week">This Week</option>
-            <option value="this_month">This Month</option>
-          </select>
-          <button className="h-8 rounded-md border border-[#E5E7EB] bg-white px-3 font-medium text-[#374151] hover:bg-[#F9FAFB]">Export</button>
-          {/* <button className="h-8 rounded-md bg-[#111827] px-3 font-medium text-white hover:bg-[#1F2937]">Create order</button> */}
+          <DashboardDateFilter value={date} onChange={setDate} />
+          <div className="relative group">
+            <button className="inline-flex h-8 items-center gap-1.5 rounded-md border border-[#E5E7EB] bg-white px-3 text-[12px] font-medium text-[#374151] hover:bg-[#F9FAFB]">
+              <Download className="h-3.5 w-3.5" /> Export
+            </button>
+            <div className="absolute right-0 top-full z-10 mt-1 hidden min-w-[150px] rounded-md border border-[#E5E7EB] bg-white py-1 shadow-lg group-hover:block">
+              <button onClick={handleExportPDF} className="flex w-full items-center gap-2 px-3 py-1.5 text-[12px] text-[#374151] hover:bg-[#F9FAFB]">
+                <FileText className="h-3.5 w-3.5" /> Export PDF
+              </button>
+              <button onClick={handleExportExcel} className="flex w-full items-center gap-2 px-3 py-1.5 text-[12px] text-[#374151] hover:bg-[#F9FAFB]">
+                <FileSpreadsheet className="h-3.5 w-3.5" /> Export Excel
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -83,7 +411,7 @@ function DashboardPage() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
                 <XAxis dataKey="d" stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} />
-                <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `₹${Math.round(v / 1000)}k`} />
+                <YAxis stroke="#9CA3AF" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `Rs.${Math.round(v / 1000)}k`} />
                 <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #E5E7EB" }} formatter={(v: number) => currency(v)} />
                 <Area type="monotone" dataKey="v" stroke="#4F46E5" strokeWidth={2} fill="url(#rev)" />
               </AreaChart>

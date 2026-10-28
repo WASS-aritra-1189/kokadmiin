@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Save } from "lucide-react";
@@ -17,8 +18,6 @@ function StaffPermissionsPage() {
   const [inheritedPermissions, setInheritedPermissions] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   const permissionTypes = ["CREATE", "READ", "UPDATE", "DELETE"];
 
@@ -34,7 +33,6 @@ function StaffPermissionsPage() {
         setMenus(menuRes?.data ?? []);
         setDesignations(desigRes?.data ?? []);
       } catch (err) {
-        console.error("Failed to load data", err);
       }
     })();
   }, []);
@@ -53,14 +51,12 @@ function StaffPermissionsPage() {
         // Backend returns { accountId, menus: [{ menu, permissions: [{ id, permissionId, name, status }] }] }
         const menuData = res?.menus ?? res?.data?.menus ?? [];
         
-        console.log("API Response menuData:", JSON.stringify(menuData, null, 2));
         
         // Build permissions map from response - MUST include permissionId!
         const permsMap = new Map<string, Map<string, { id: string; permissionId: string; status: boolean }>>();
         for (const m of menuData) {
           const permMap = new Map<string, { id: string; permissionId: string; status: boolean }>();
           for (const p of m.permissions ?? []) {
-            console.log("Permission from API:", JSON.stringify(p));
             permMap.set(p.name, { id: p.id, permissionId: p.permissionId, status: p.status });
           }
           permsMap.set(m.menu, permMap);
@@ -73,7 +69,6 @@ function StaffPermissionsPage() {
             menu: m.name,
             permissions: permissionTypes.map(pt => {
               const existing = permsMap.get(m.name)?.get(pt);
-              console.log("Existing for", m.name, pt, ":", existing);
               return {
                 id: existing?.id || "",
                 permissionId: existing?.permissionId || "",
@@ -112,11 +107,9 @@ function StaffPermissionsPage() {
               }))
             );
           } catch (e) {
-            console.error("Failed to load inherited permissions", e);
           }
         }
       } catch (err) {
-        console.error("Failed to load staff permissions", err);
       } finally {
         setLoading(false);
       }
@@ -132,19 +125,17 @@ function StaffPermissionsPage() {
   const handleSave = async () => {
     if (!selectedStaff) return;
     setSaving(true);
-    setError(null);
-    setSuccess(null);
+    
+    
 
     try {
       // Only include enabled permissions with valid UUIDs
-      console.log("permissions state before save:", JSON.stringify(permissions, null, 2));
       
       const permList = permissions
         .flatMap(menuItem => 
           menuItem.permissions
             .filter(p => p.status && p.id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(p.id))
             .map(p => {
-              console.log("Processing permission:", JSON.stringify(p));
               return {
                 menuId: menus.find(m => m.name === menuItem.menu)?.id,
                 permissionId: p.permissionId || p.id,
@@ -154,7 +145,6 @@ function StaffPermissionsPage() {
         )
         .filter(p => p.menuId && p.permissionId);
 
-      console.log("Final permList:", JSON.stringify(permList, null, 2));
 
       // Add accountId to each permission
       const permListWithAccount = permList.map(p => ({
@@ -162,13 +152,11 @@ function StaffPermissionsPage() {
         accountId: selectedStaff.accountId,
       }));
       
-      console.log("Final permList with accountId:", JSON.stringify(permListWithAccount, null, 2));
 
       await accountPermissionService.update(permListWithAccount);
-      setSuccess("Permissions saved successfully!");
+      toast.success("Permissions saved successfully!");
     } catch (err: any) {
-      console.error(err);
-      setError(err?.response?.data?.message ?? err?.message ?? "Failed to save permissions");
+      toast.error(err?.response?.data?.message ?? err?.message ?? "Failed to save permissions");
     } finally {
       setSaving(false);
     }
@@ -186,7 +174,7 @@ function StaffPermissionsPage() {
         <label className="mb-2 block text-[12px] font-medium text-[#374151]">Select Staff Member</label>
         <select
           value={selectedStaff?.id ?? ""}
-          onChange={(e) => { setSelectedStaff(staffList.find(s => s.id === e.target.value) || null); setSuccess(null); setError(null); }}
+          onChange={(e) => { setSelectedStaff(staffList.find(s => s.id === e.target.value) || null);   }}
           className="h-10 w-full max-w-md rounded-xl border border-[#E5E7EB] bg-white px-3 text-[12px] outline-none focus:border-[#4F46E5]"
         >
           <option value="">-- Select a staff member --</option>
@@ -195,9 +183,6 @@ function StaffPermissionsPage() {
           ))}
         </select>
       </div>
-
-      {error && <div className="mb-4 rounded-2xl border border-[#FEE2E2] bg-[#FEF2F2] px-4 py-3 text-[12px] text-[#B91C1C]">{error}</div>}
-      {success && <div className="mb-4 rounded-2xl border border-[#D1FAE5] bg-[#ECFDF5] px-4 py-3 text-[12px] text-[#065F46]">{success}</div>}
 
       {selectedStaff && (
         <div className="overflow-hidden rounded-3xl border border-[#E5E7EB] bg-white shadow-sm">

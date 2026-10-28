@@ -1,6 +1,7 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Loader2, Plus, Trash2, X, ImageIcon, ChevronDown } from "lucide-react";
+import { Loader2, Plus, Trash2, X, ImageIcon, ChevronDown, Pencil } from "lucide-react";
 import { bannerService, resolveBannerImage, type Banner, type BannerStatus } from "@/services/banner.service";
 
 export const Route = createFileRoute("/_admin/cms/banners")({
@@ -20,15 +21,13 @@ function BannersPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
-  const [statusFilter, setStatusFilter] = useState<BannerStatus | "">("");
+  const [statusFilter, setStatusFilter] = useState<BannerStatus | "">("ACTIVE");
   const [uploadOpen, setUploadOpen] = useState(false);
   const limit = 20;
 
   const fetchBanners = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
       const res = await bannerService.getAll({
         page,
@@ -38,7 +37,7 @@ function BannersPage() {
       setBanners(res.data.data);
       setTotal(res.data.total);
     } catch {
-      setError("Failed to load banners.");
+      toast.error("Failed to load banners.");
     } finally {
       setLoading(false);
     }
@@ -53,7 +52,7 @@ function BannersPage() {
       const updated = await bannerService.changeStatus(banner.id, status);
       setBanners((prev) => prev.map((b) => (b.id === banner.id ? { ...b, ...updated } : b)));
     } catch {
-      alert("Failed to update status.");
+      toast.error("Failed to update status.");
     }
   };
 
@@ -64,8 +63,22 @@ function BannersPage() {
       setBanners((prev) => prev.filter((b) => b.id !== id));
       setTotal((t) => t - 1);
     } catch {
-      alert("Failed to delete banner.");
+      toast.error("Failed to delete banner.");
     }
+  };
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
+
+  const handleEdit = (banner: Banner) => {
+    setEditingBanner(banner);
+    setEditOpen(true);
+  };
+
+  const handleUpdated = (updatedBanner: Banner) => {
+    setBanners((prev) => prev.map((b) => b.id === updatedBanner.id ? updatedBanner : b));
+    setEditOpen(false);
+    setEditingBanner(null);
   };
 
   const handleUploaded = (banner: Banner) => {
@@ -112,8 +125,6 @@ function BannersPage() {
             <Loader2 className="h-5 w-5 animate-spin mr-2" />
             <span className="text-[13px]">Loading banners…</span>
           </div>
-        ) : error ? (
-          <div className="flex items-center justify-center py-20 text-red-500 text-[13px]">{error}</div>
         ) : banners.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-[#9CA3AF]">
             <ImageIcon className="h-10 w-10 mb-2 opacity-30" />
@@ -127,6 +138,7 @@ function BannersPage() {
                 banner={banner}
                 onStatusChange={handleStatusChange}
                 onDelete={handleDelete}
+                onEdit={handleEdit}
               />
             ))}
           </div>
@@ -146,14 +158,23 @@ function BannersPage() {
       {uploadOpen && (
         <UploadModal onClose={() => setUploadOpen(false)} onUploaded={handleUploaded} />
       )}
+
+      {editOpen && editingBanner && (
+        <EditModal 
+          banner={editingBanner} 
+          onClose={() => { setEditOpen(false); setEditingBanner(null); }} 
+          onUpdated={handleUpdated} 
+        />
+      )}
     </div>
   );
 }
 
-function BannerCard({ banner, onStatusChange, onDelete }: {
+function BannerCard({ banner, onStatusChange, onDelete, onEdit }: {
   banner: Banner;
   onStatusChange: (b: Banner, s: BannerStatus) => void;
   onDelete: (id: string) => void;
+  onEdit: (b: Banner) => void;
 }) {
   const [imgError, setImgError] = useState(false);
   const src = resolveBannerImage(banner);
@@ -180,26 +201,38 @@ function BannerCard({ banner, onStatusChange, onDelete }: {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-3 py-2">
-        <span className="text-[10px] text-[#9CA3AF]">{new Date(banner.createdAt).toLocaleDateString()}</span>
-        <div className="flex items-center gap-1">
-          {/* Status toggle */}
-          <div className="relative">
-            <select
-              value={banner.status}
-              onChange={(e) => onStatusChange(banner, e.target.value as BannerStatus)}
-              className="h-6 appearance-none rounded border border-[#E5E7EB] bg-white pl-1.5 pr-5 text-[10px] text-[#374151] outline-none focus:border-[#4F46E5]"
+      <div className="px-3 py-2">
+        {banner.title && (
+          <p className="text-[11px] font-medium text-[#374151] mb-1 truncate">{banner.title}</p>
+        )}
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] text-[#9CA3AF]">{new Date(banner.createdAt).toLocaleDateString()}</span>
+          <div className="flex items-center gap-1">
+            {/* Edit button */}
+            <button
+              onClick={() => onEdit(banner)}
+              className="rounded-md p-1 text-[#6B7280] hover:bg-[#F3F4F6] hover:text-[#4F46E5]"
             >
-              {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-1 top-1/2 h-2.5 w-2.5 -translate-y-1/2 text-[#9CA3AF]" />
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            {/* Status toggle */}
+            <div className="relative">
+              <select
+                value={banner.status}
+                onChange={(e) => onStatusChange(banner, e.target.value as BannerStatus)}
+                className="h-6 appearance-none rounded border border-[#E5E7EB] bg-white pl-1.5 pr-5 text-[10px] text-[#374151] outline-none focus:border-[#4F46E5]"
+              >
+                {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-1 top-1/2 h-2.5 w-2.5 -translate-y-1/2 text-[#9CA3AF]" />
+            </div>
+            <button
+              onClick={() => onDelete(banner.id)}
+              className="rounded-md p-1 text-[#6B7280] hover:bg-[#FEF2F2] hover:text-[#EF4444]"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
           </div>
-          <button
-            onClick={() => onDelete(banner.id)}
-            className="rounded-md p-1 text-[#6B7280] hover:bg-[#FEF2F2] hover:text-[#EF4444]"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-          </button>
         </div>
       </div>
     </div>
@@ -212,9 +245,9 @@ function UploadModal({ onClose, onUploaded }: {
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [title, setTitle] = useState<string>("Banner");
   const [status, setStatus] = useState<BannerStatus>("ACTIVE");
   const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = (f: File) => {
@@ -230,14 +263,13 @@ function UploadModal({ onClose, onUploaded }: {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) { setError("Please select an image."); return; }
+    if (!file) { toast.error("Please select an image."); return; }
     setUploading(true);
-    setError(null);
     try {
-      const saved = await bannerService.create(file, status);
+      const saved = await bannerService.create(file, status, title);
       onUploaded(saved);
     } catch {
-      setError("Upload failed. Please try again.");
+      toast.error("Upload failed. Please try again.");
     } finally {
       setUploading(false);
     }
@@ -283,6 +315,18 @@ function UploadModal({ onClose, onUploaded }: {
             <p className="text-[11px] text-[#6B7280]">Selected: {file.name} ({(file.size / 1024).toFixed(1)} KB)</p>
           )}
 
+          {/* Title */}
+          <div>
+            <label className="text-[11px] font-medium text-[#374151] mb-1 block">Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="h-9 w-full rounded-md border border-[#E5E7EB] bg-white px-3 text-[13px] outline-none focus:border-[#4F46E5]"
+              placeholder="Enter banner title"
+            />
+          </div>
+
           {/* Status */}
           <div>
             <label className="text-[11px] font-medium text-[#374151] mb-1 block">Status</label>
@@ -298,8 +342,6 @@ function UploadModal({ onClose, onUploaded }: {
             </div>
           </div>
 
-          {error && <p className="text-[12px] text-red-500">{error}</p>}
-
           <div className="flex justify-end gap-2 pt-1">
             <button type="button" onClick={onClose} className="h-8 rounded-md border border-[#E5E7EB] px-4 text-[12px] text-[#374151] hover:bg-[#F3F4F6]">
               Cancel
@@ -310,6 +352,143 @@ function UploadModal({ onClose, onUploaded }: {
               className="h-8 rounded-md bg-[#4F46E5] px-4 text-[12px] font-medium text-white disabled:opacity-50 hover:bg-[#4338CA]"
             >
               {uploading ? "Uploading…" : "Upload"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function EditModal({ banner, onClose, onUpdated }: {
+  banner: Banner;
+  onClose: () => void;
+  onUpdated: (b: Banner) => void;
+}) {
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [title, setTitle] = useState<string>(banner.title || "Banner");
+  const [status, setStatus] = useState<BannerStatus>(banner.status);
+  const [updating, setUpdating] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const currentImage = resolveBannerImage(banner);
+
+  const handleFile = (f: File) => {
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith("image/")) handleFile(f);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setUpdating(true);
+    try {
+      const updated = await bannerService.update(banner.id, file || undefined, status, title);
+      onUpdated(updated);
+    } catch {
+      toast.error("Update failed. Please try again.");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-[#E5E7EB] px-5 py-4">
+          <h2 className="text-[15px] font-semibold">Edit Banner</h2>
+          <button onClick={onClose} className="rounded-md p-1.5 text-[#6B7280] hover:bg-[#F3F4F6]">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {/* Current image */}
+          <div>
+            <label className="text-[11px] font-medium text-[#374151] mb-1 block">Current Image</label>
+            {currentImage ? (
+              <img src={currentImage} alt="Current banner" className="h-32 w-full rounded-md object-cover border border-[#E5E7EB]" />
+            ) : (
+              <div className="flex h-32 items-center justify-center rounded-md border border-[#E5E7EB] bg-[#F3F4F6]">
+                <ImageIcon className="h-8 w-8 text-[#9CA3AF]" />
+              </div>
+            )}
+          </div>
+
+          {/* New image drop zone */}
+          <div>
+            <label className="text-[11px] font-medium text-[#374151] mb-1 block">New Image (optional)</label>
+            <div
+              onDrop={handleDrop}
+              onDragOver={(e) => e.preventDefault()}
+              onClick={() => inputRef.current?.click()}
+              className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-[#E5E7EB] bg-[#FAFAF9] py-6 transition-colors hover:border-[#4F46E5] hover:bg-[#EEF2FF]/30"
+            >
+              {preview ? (
+                <img src={preview} alt="Preview" className="max-h-32 rounded-md object-contain" />
+              ) : (
+                <>
+                  <ImageIcon className="h-6 w-6 text-[#9CA3AF] mb-2" />
+                  <p className="text-[12px] text-[#6B7280]">Click or drag & drop to change image</p>
+                  <p className="text-[10px] text-[#9CA3AF] mt-0.5">Leave empty to keep current image</p>
+                </>
+              )}
+              <input
+                ref={inputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+              />
+            </div>
+          </div>
+
+          {file && (
+            <p className="text-[11px] text-[#6B7280]">New image: {file.name} ({(file.size / 1024).toFixed(1)} KB)</p>
+          )}
+
+          {/* Title */}
+          <div>
+            <label className="text-[11px] font-medium text-[#374151] mb-1 block">Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="h-9 w-full rounded-md border border-[#E5E7EB] bg-white px-3 text-[13px] outline-none focus:border-[#4F46E5]"
+              placeholder="Enter banner title"
+            />
+          </div>
+
+          {/* Status */}
+          <div>
+            <label className="text-[11px] font-medium text-[#374151] mb-1 block">Status</label>
+            <div className="relative">
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value as BannerStatus)}
+                className="h-9 w-full appearance-none rounded-md border border-[#E5E7EB] bg-white pl-3 pr-8 text-[13px] outline-none focus:border-[#4F46E5]"
+              >
+                {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9CA3AF]" />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-1">
+            <button type="button" onClick={onClose} className="h-8 rounded-md border border-[#E5E7EB] px-4 text-[12px] text-[#374151] hover:bg-[#F3F4F6]">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={updating}
+              className="h-8 rounded-md bg-[#4F46E5] px-4 text-[12px] font-medium text-white disabled:opacity-50 hover:bg-[#4338CA]"
+            >
+              {updating ? "Updating…" : "Update Banner"}
             </button>
           </div>
         </form>

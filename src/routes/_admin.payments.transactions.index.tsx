@@ -1,14 +1,24 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Search, X, ExternalLink, IndianRupee } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { Search, X, ExternalLink, IndianRupee, User } from "lucide-react";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
 import { transactionsService, type Transaction, type TransactionStats } from "@/services/transactions.service";
 import { PaginationBar } from "@/components/ui/pagination-bar";
 
 export const Route = createFileRoute("/_admin/payments/transactions/")({
   component: TransactionsPage,
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      accountId: search?.accountId as string | undefined,
+    };
+  },
+  beforeLoad: () => {
+  },
 });
 
-const LIMIT = 10;
+const LIMIT = 20;
+const FETCH_ALL_LIMIT = 500;
 
 const ORDER_STATUSES = ["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED", "RETURNED"];
 const PAYMENT_STATUSES = ["PENDING", "SUCCESS", "FAILED", "REFUNDED", "REFUND_INITIATED", "CANCELLED"];
@@ -73,58 +83,95 @@ function StatsCards({ stats }: { stats?: TransactionStats }) {
 }
 
 function TransactionsPage() {
+  const search = Route.useSearch();
+  const accountId = search.accountId;
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
   const [orderStatus, setOrderStatus] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("");
-  const [data, setData] = useState<{ data: Transaction[]; total: number; stats?: TransactionStats } | null>(null);
+  const [allData, setAllData] = useState<Transaction[]>([]);
+  const [stats, setStats] = useState<TransactionStats | undefined>();
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Transaction | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
-  const load = async (p = page, search = q, os = orderStatus, ps = paymentStatus) => {
+  // Fetch all once, filter client-side
+  useEffect(() => {
     setLoading(true);
-    try {
-      const res = await transactionsService.findAll({
-        page: p,
-        limit: LIMIT,
-        ...(search ? { search } : {}),
-        ...(os ? { orderStatus: os } : {}),
-        ...(ps ? { paymentStatus: ps } : {}),
-      });
-      setData(res ?? { data: [], total: 0, stats: undefined });
-    } catch (e) {
-      console.error(e);
-      setData({ data: [], total: 0, stats: undefined });
-    } finally {
-      setLoading(false);
+    const load = async () => {
+      try {
+        let res;
+        if (accountId) {
+          res = await transactionsService.findByUser(accountId, { page: 1, limit: FETCH_ALL_LIMIT });
+        } else {
+          res = await transactionsService.findAll({ page: 1, limit: FETCH_ALL_LIMIT });
+        }
+        setAllData(res?.data ?? []);
+        setStats((res as any)?.stats);
+      } catch {
+        setAllData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [accountId]);
+
+  // Client-side filtering
+  const filtered = allData.filter((t) => {
+    if (orderStatus && t.orderStatus !== orderStatus) return false;
+    if (paymentStatus && t.paymentStatus !== paymentStatus) return false;
+    if (dateFrom && new Date(t.createdAt) < new Date(dateFrom)) return false;
+    if (dateTo && new Date(t.createdAt) > new Date(dateTo + "T23:59:59")) return false;
+    if (q) {
+      const s = q.toLowerCase();
+      if (
+        !t.orderNumber?.toLowerCase().includes(s) &&
+        !t.transactionId?.toLowerCase().includes(s) &&
+        !t.customerName?.toLowerCase().includes(s) &&
+        !t.customerEmail?.toLowerCase().includes(s) &&
+        !t.customerPhone?.includes(s)
+      ) return false;
     }
-  };
+    return true;
+  });
 
-  useEffect(() => { load(); }, [page, orderStatus, paymentStatus]);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / LIMIT));
+  const pagedData = filtered.slice((page - 1) * LIMIT, page * LIMIT);
 
-  const totalPages = data ? Math.max(1, Math.ceil(data.total / LIMIT)) : 1;
+  // Reset page when filters change
+  useEffect(() => { setPage(1); }, [q, orderStatus, paymentStatus, dateFrom, dateTo]);
 
   return (
     <div className="p-6">
       <div className="text-[11px] font-medium uppercase tracking-wider text-[#6B7280]">Payments</div>
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-[22px] font-semibold tracking-tight">Transactions</h1>
-          <p className="mt-1 text-[13px] text-[#6B7280]">View all payment transactions and their status.</p>
+          <h1 className="text-[22px] font-semibold tracking-tight">Transactions{accountId ? " for User" : ""}</h1>
+          <p className="mt-1 text-[13px] text-[#6B7280]">
+            {accountId ? "Viewing transactions for specific user" : "View all payment transactions and their status."}
+          </p>
         </div>
       </div>
 
-      <StatsCards stats={data?.stats} />
+      <StatsCards stats={stats} />
 
       <div className="overflow-hidden rounded-lg border border-[#E5E7EB] bg-white">
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3 border-b border-[#E5E7EB] px-3 py-2.5">
+          {accountId && (
+            <div className="flex items-center gap-2 rounded-md bg-[#EEF2FF] px-3 py-1.5 text-[12px] font-medium text-[#4F46E5]">
+              <User className="h-3.5 w-3.5" />
+              <span>Viewing user transactions</span>
+            </div>
+          )}
+          
           <div className="relative w-64">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9CA3AF]" />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { setPage(1); load(1, q, orderStatus, paymentStatus); } }}
               placeholder="Search order, customer, transaction..."
               className="h-8 w-full rounded-md border border-[#E5E7EB] bg-white pl-8 pr-2 text-[12px] outline-none focus:border-[#4F46E5]"
             />
@@ -147,6 +194,12 @@ function TransactionsPage() {
             <option value="">All Payment Status</option>
             {PAYMENT_STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
           </select>
+          <DateRangeFilter
+            from={dateFrom} to={dateTo}
+            onFromChange={(v) => { setDateFrom(v); setPage(1); }}
+            onToChange={(v) => { setDateTo(v); setPage(1); }}
+            onClear={() => { setDateFrom(""); setDateTo(""); setPage(1); }}
+          />
         </div>
 
         {/* Table */}
@@ -166,8 +219,8 @@ function TransactionsPage() {
             </thead>
             <tbody>
               {loading && <tr><td colSpan={8} className="px-4 py-8 text-center text-[#6B7280]">Loading…</td></tr>}
-              {!loading && (!data?.data || data.data.length === 0) && <tr><td colSpan={8} className="px-4 py-8 text-center text-[#6B7280]">No transactions found.</td></tr>}
-              {!loading && data?.data.map((t) => (
+              {!loading && pagedData.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-[#6B7280]">No transactions found.</td></tr>}
+              {!loading && pagedData.map((t) => (
                 <tr key={t.id} className="border-b border-[#F3F4F6] last:border-0 hover:bg-[#FAFAF9]">
                   <td className="px-3 py-2.5 font-mono text-[11px] font-medium text-[#4F46E5]">{t.orderNumber}</td>
                   <td className="px-3 py-2.5 text-[#4B5563] tabular-nums">{new Date(t.createdAt).toLocaleDateString("en-IN")}</td>
@@ -199,7 +252,7 @@ function TransactionsPage() {
 
         {/* Pagination */}
         <div className="flex items-center justify-between border-t border-[#F3F4F6] px-3 py-2 text-[11px] text-[#6B7280]">
-          <div>Showing <span className="font-medium text-[#111827]">{data?.data?.length ?? 0}</span> of {data?.total ?? 0}</div>
+          <div>Showing <span className="font-medium text-[#111827]">{pagedData.length}</span> of {filtered.length}</div>
           <div className="flex items-center gap-1">
             <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
           </div>

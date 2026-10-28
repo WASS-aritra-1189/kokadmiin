@@ -1,4 +1,5 @@
 // src/routes/_admin/schools/index.tsx
+import { toast } from "sonner";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { 
@@ -34,6 +35,7 @@ function SchoolsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [visibilityFilter, setVisibilityFilter] = useState<"" | "true" | "false">("" );
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
@@ -45,7 +47,7 @@ function SchoolsPage() {
 
   useEffect(() => {
     loadSchools();
-  }, [page, statusFilter, limit]);
+  }, [page, statusFilter, visibilityFilter, limit]);
 
   const loadSchools = async () => {
     try {
@@ -53,15 +55,14 @@ function SchoolsPage() {
       const params: any = { page, limit };
       if (search) params.search = search;
       if (statusFilter) params.status = statusFilter;
+      if (visibilityFilter !== "") params.showInEcommerce = visibilityFilter === "true";
       
       const response = await schoolService.getAll(params);
-      console.log("API Response:", response);
       
       // Response structure: { data: School[], total: number, page: number, limit: number }
       setSchools(response.data || []);
       setTotal(response.total || 0);
     } catch (error) {
-      console.error("Error loading schools:", error);
       setSchools([]);
       setTotal(0);
     } finally {
@@ -79,11 +80,9 @@ function SchoolsPage() {
     setViewSchool(null);
     try {
       const school = await schoolService.getById(schoolId);
-      console.log("School details:", school);
       setViewSchool(school);
     } catch (err) {
-      console.error("Failed to fetch school details:", err);
-      alert("Failed to load school details");
+      toast.error("Failed to load school details");
     } finally {
       setViewLoading(false);
     }
@@ -95,7 +94,7 @@ function SchoolsPage() {
       await schoolService.delete(school.id);
       loadSchools();
     } catch (err: any) {
-      alert(err.response?.data?.message || "Failed to delete school");
+      toast.error(err.response?.data?.message || "Failed to delete school");
     } finally {
       setDeleting(false);
       setConfirmSchool(null);
@@ -155,6 +154,18 @@ function SchoolsPage() {
               <option value="PENDING">Pending</option>
               <option value="INACTIVE">Inactive</option>
               <option value="REJECTED">Rejected</option>
+            </select>
+          </label>
+          <label className="flex items-center gap-1.5 text-[11px] text-[#6B7280]">
+            Visibility:
+            <select
+              value={visibilityFilter}
+              onChange={(e) => { setVisibilityFilter(e.target.value as "" | "true" | "false"); setPage(1); }}
+              className="h-8 rounded-md border border-[#E5E7EB] bg-white px-2 text-[12px] text-[#111827] outline-none"
+            >
+              <option value="">All</option>
+              <option value="true">✓ Visible in store</option>
+              <option value="false">Hidden from store</option>
             </select>
           </label>
         </div>
@@ -225,7 +236,7 @@ function SchoolsPage() {
                         try {
                           await schoolService.toggleEcommerce(school.id, !school.showInEcommerce);
                           loadSchools();
-                        } catch { alert("Failed to update"); }
+                        } catch { toast.error("Failed to update"); }
                       }}
                       className={"rounded-full px-2.5 py-0.5 text-[10px] font-medium transition-colors " +
                         (school.showInEcommerce

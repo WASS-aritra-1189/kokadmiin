@@ -29,11 +29,12 @@ function flattenTree(nodes: (Genre & { children: Genre[] })[]): Genre[] {
 
 // ── single tree node ──────────────────────────────────────────────────────────
 function TreeNode({
-  node, depth, onStatusToggle, onDelete, expandedIds, toggleExpand,
+  node, depth, onStatusToggle, onEcommerceToggle, onDelete, expandedIds, toggleExpand,
 }: {
   node: Genre & { children: (Genre & { children: Genre[] })[] };
   depth: number;
   onStatusToggle: (g: Genre) => void;
+  onEcommerceToggle: (g: Genre) => void;
   onDelete: (g: Genre) => void;
   expandedIds: Set<string>;
   toggleExpand: (id: string) => void;
@@ -88,6 +89,19 @@ function TreeNode({
             {node.status}
           </button>
         </td>
+        <td className="px-4 py-2.5">
+          <button
+            onClick={() => onEcommerceToggle(node)}
+            title={node.showInEcommerce ? "Visible in store — click to hide" : "Hidden from store — click to show"}
+            className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+              node.showInEcommerce
+                ? "bg-[#DBEAFE] text-[#1D4ED8] hover:bg-[#BFDBFE]"
+                : "bg-[#F3F4F6] text-[#9CA3AF] hover:bg-[#E5E7EB]"
+            }`}
+          >
+            {node.showInEcommerce ? "Visible" : "Hidden"}
+          </button>
+        </td>
         <td className="px-4 py-2.5 text-right">
           <button
             onClick={() => onDelete(node)}
@@ -104,6 +118,7 @@ function TreeNode({
             node={child as any}
             depth={depth + 1}
             onStatusToggle={onStatusToggle}
+            onEcommerceToggle={onEcommerceToggle}
             onDelete={onDelete}
             expandedIds={expandedIds}
             toggleExpand={toggleExpand}
@@ -126,10 +141,16 @@ function Page() {
   const load = async () => {
     setLoading(true);
     try {
-      const res = await genreService.getActive();
-      const data: Genre[] = Array.isArray(res) ? res : (res?.data ?? []);
+      const res = await genreService.getAll({ limit: 500 });
+      // paginated response: { data: Genre[], total, page } or plain array
+      const data: Genre[] = Array.isArray(res)
+        ? res
+        : Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res?.data?.data)
+            ? res.data.data
+            : [];
       setGenres(data);
-      // auto-expand level 1 and 2
       const toExpand = new Set<string>();
       for (const g of data) {
         if (g.level != null && g.level <= 2) toExpand.add(g.id);
@@ -155,6 +176,11 @@ function Page() {
   const handleStatusToggle = async (g: Genre) => {
     const next = g.status === "ACTIVE" ? "DEACTIVE" : "ACTIVE";
     await genreService.changeStatus(g.id, next);
+    load();
+  };
+
+  const handleEcommerceToggle = async (g: Genre) => {
+    await genreService.setEcommerceVisibility(g.id, !g.showInEcommerce);
     load();
   };
 
@@ -198,7 +224,7 @@ function Page() {
       </div>
 
       {/* Stats */}
-      <div className="mt-5 grid grid-cols-3 gap-3">
+      <div className="mt-5 grid grid-cols-4 gap-3">
         <div className="rounded-lg border border-[#E5E7EB] bg-white p-4">
           <div className="text-[11px] uppercase tracking-wider text-[#6B7280]">Total</div>
           <div className="mt-1 text-[22px] font-semibold tabular-nums">{genres.length}</div>
@@ -207,6 +233,12 @@ function Page() {
           <div className="text-[11px] uppercase tracking-wider text-[#6B7280]">Active</div>
           <div className="mt-1 text-[22px] font-semibold tabular-nums">
             {genres.filter((g) => g.status === "ACTIVE").length}
+          </div>
+        </div>
+        <div className="rounded-lg border border-[#E5E7EB] bg-white p-4">
+          <div className="text-[11px] uppercase tracking-wider text-[#6B7280]">Hidden from Store</div>
+          <div className="mt-1 text-[22px] font-semibold tabular-nums">
+            {genres.filter((g) => !g.showInEcommerce).length}
           </div>
         </div>
         <div className="rounded-lg border border-[#E5E7EB] bg-white p-4">
@@ -257,6 +289,7 @@ function Page() {
                 <th className="px-4 py-2 text-left">External ID</th>
                 <th className="px-4 py-2 text-left">Description</th>
                 <th className="px-4 py-2 text-left">Status</th>
+                <th className="px-4 py-2 text-left">Store</th>
                 <th className="px-4 py-2" />
               </tr>
             </thead>
@@ -294,6 +327,19 @@ function Page() {
                         {g.status}
                       </button>
                     </td>
+                    <td className="px-4 py-2.5">
+                      <button
+                        onClick={() => handleEcommerceToggle(g)}
+                        title={g.showInEcommerce ? "Visible in store — click to hide" : "Hidden from store — click to show"}
+                        className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                          g.showInEcommerce
+                            ? "bg-[#DBEAFE] text-[#1D4ED8] hover:bg-[#BFDBFE]"
+                            : "bg-[#F3F4F6] text-[#9CA3AF] hover:bg-[#E5E7EB]"
+                        }`}
+                      >
+                        {g.showInEcommerce ? "Visible" : "Hidden"}
+                      </button>
+                    </td>
                     <td className="px-4 py-2.5 text-right">
                       <button
                         onClick={() => setConfirmDelete(g)}
@@ -313,6 +359,7 @@ function Page() {
                     node={node as any}
                     depth={0}
                     onStatusToggle={handleStatusToggle}
+                    onEcommerceToggle={handleEcommerceToggle}
                     onDelete={setConfirmDelete}
                     expandedIds={expandedIds}
                     toggleExpand={toggleExpand}

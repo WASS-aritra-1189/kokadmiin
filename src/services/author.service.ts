@@ -27,7 +27,7 @@ export interface AuthorPayload {
 const wrap = (r: any) => r.data;
 
 export const authorService = {
-  getAll: (params: { page?: number; limit?: number; search?: string }) =>
+  getAll: (params: { page?: number; limit?: number; search?: string; isFeatured?: boolean }) =>
     api.get("/authors", { params }).then(wrap),
   create: (data: AuthorPayload) => api.post("/authors", data).then(wrap),
   update: (id: string, data: Partial<AuthorPayload>) => api.patch(`/authors/${id}`, data).then(wrap),

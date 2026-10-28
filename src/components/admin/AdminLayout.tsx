@@ -3,6 +3,7 @@ import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-route
 import {
   Bell, ChevronDown, ChevronRight, LogOut, Menu, Search as SearchIcon,
 } from "lucide-react";
+import { Toaster } from "@/components/ui/sonner";
 import { NAV, findNavLabel } from "./nav-config";
 import { useAppDispatch, useAppSelector } from "@/store";
 import { logout } from "@/store/slices/authSlice";
@@ -78,6 +79,7 @@ export function AdminLayout({ children }: { children?: ReactNode }) {
 
         <main className="min-w-0 flex-1">{children ?? <Outlet />}</main>
       </div>
+      <Toaster position="top-right" richColors closeButton />
     </div>
   );
 }

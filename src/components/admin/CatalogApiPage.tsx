@@ -29,7 +29,7 @@ interface Props<T extends { id: string; status: string; createdAt: string }> {
   newLabel: string;
   columns: CatalogColumn<T>[];
   sheetFields: CatalogSheetField[];
-  fetchFn: (params: { page: number; limit: number; search?: string }) => Promise<any>;
+  fetchFn: (params: { page: number; limit: number; search?: string; [key: string]: any }) => Promise<any>;
   createFn: (data: any) => Promise<any>;
   updateFn: (id: string, data: any) => Promise<any>;
   changeStatusFn: (id: string, status: string) => Promise<any>;
@@ -38,12 +38,15 @@ interface Props<T extends { id: string; status: string; createdAt: string }> {
   extraSheetContent?: (form: Record<string, any>, setForm: (f: Record<string, any>) => void) => ReactNode;
   uploadProfileImageFn?: (id: string, file: File) => Promise<any>;
   profileImageField?: string;
+  extraFilters?: ReactNode;
+  activeExtraParams?: Record<string, any>;
 }
 
 export function CatalogApiPage<T extends { id: string; status: string; createdAt: string }>({
   title, description, newLabel, columns, sheetFields,
   fetchFn, createFn, updateFn, changeStatusFn, deleteFn,
   defaultForm, extraSheetContent, uploadProfileImageFn, profileImageField,
+  extraFilters, activeExtraParams,
 }: Props<T>) {
   const [items, setItems] = useState<T[]>([]);
   const [total, setTotal] = useState(0);
@@ -57,7 +60,7 @@ export function CatalogApiPage<T extends { id: string; status: string; createdAt
   const load = async (p = page, search = q) => {
     setLoading(true);
     try {
-      const res = await fetchFn({ page: p, limit: LIMIT, ...(search ? { search } : {}) });
+      const res = await fetchFn({ page: p, limit: LIMIT, ...(search ? { search } : {}), ...(activeExtraParams ?? {}) });
       // Handle both { data: [], total } and { data: { data: [], total } } shapes
       const inner = Array.isArray(res?.data) ? res : (res?.data ?? res);
       setItems(Array.isArray(inner?.data) ? inner.data : (Array.isArray(inner) ? inner : []));
@@ -67,7 +70,7 @@ export function CatalogApiPage<T extends { id: string; status: string; createdAt
     }
   };
 
-  useEffect(() => { load(); }, [page]);
+  useEffect(() => { load(); }, [page, activeExtraParams]);
 
   const totalPages = Math.max(1, Math.ceil(total / LIMIT));
 
@@ -134,7 +137,7 @@ export function CatalogApiPage<T extends { id: string; status: string; createdAt
 
       <div className="mt-5 overflow-hidden rounded-lg border border-[#E5E7EB] bg-white">
         {/* Toolbar */}
-        <div className="flex items-center gap-2 border-b border-[#F3F4F6] px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2 border-b border-[#F3F4F6] px-3 py-2">
           <div className="relative flex-1 min-w-[220px]">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9CA3AF]" />
             <input
@@ -145,6 +148,7 @@ export function CatalogApiPage<T extends { id: string; status: string; createdAt
               className="h-8 w-full rounded-md border border-[#E5E7EB] bg-white pl-8 pr-2 text-[12px] outline-none focus:border-[#4F46E5]"
             />
           </div>
+          {extraFilters}
         </div>
 
         {/* Table */}

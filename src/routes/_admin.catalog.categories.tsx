@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
@@ -180,13 +181,11 @@ function CategorySheet({ item, onClose, onSaved }: { item: ProductCategory | nul
     status: item?.status ?? "ACTIVE",
   });
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const set = (k: keyof ProductCategoryPayload, v: string) => setForm((f) => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setSaving(true);
     try {
       if (isEdit) {
@@ -196,7 +195,7 @@ function CategorySheet({ item, onClose, onSaved }: { item: ProductCategory | nul
       }
       onSaved();
     } catch (err: any) {
-      setError(err.response?.data?.message ?? "Something went wrong");
+      toast.error(err.response?.data?.message ?? "Something went wrong");
     } finally {
       setSaving(false);
     }

@@ -47,7 +47,6 @@ function CompanySettings() {
         });
       }
     } catch (error) {
-      console.error("Failed to load settings:", error);
     } finally {
       setLoading(false);
     }
@@ -74,7 +73,6 @@ function CompanySettings() {
       }
       await loadSettings();
     } catch (error: any) {
-      console.error("Failed to save settings:", error);
       const msg = error?.response?.data?.data?.errors?.[0] || error?.response?.data?.message || "Failed to save settings";
       toast.error(msg);
     } finally {

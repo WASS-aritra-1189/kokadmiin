@@ -1,6 +1,8 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Search, X, ExternalLink, IndianRupee } from "lucide-react";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
 import { transactionsService, type Transaction, type TransactionStats } from "@/services/transactions.service";
 import { PaginationBar } from "@/components/ui/pagination-bar";
 
@@ -70,8 +72,10 @@ function CodPage() {
   const [data, setData] = useState<{ data: Transaction[]; total: number; stats?: CodStats } | null>(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Transaction | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
-  const load = async (p = page, search = q, os = orderStatus) => {
+  const load = async (p = page, search = q, os = orderStatus, df = dateFrom, dt = dateTo) => {
     setLoading(true);
     try {
       const res = await (transactionsService as any).findAllCod({
@@ -79,17 +83,18 @@ function CodPage() {
         limit: LIMIT,
         ...(search ? { search } : {}),
         ...(os ? { status: os } : {}),
+        ...(df ? { dateFrom: df } : {}),
+        ...(dt ? { dateTo: dt } : {}),
       });
       setData(res ?? { data: [], total: 0, stats: undefined });
     } catch (e) {
-      console.error(e);
       setData({ data: [], total: 0, stats: undefined });
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, [page, orderStatus]);
+  useEffect(() => { load(); }, [page, orderStatus, dateFrom, dateTo]);
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / LIMIT)) : 1;
 
@@ -127,6 +132,12 @@ function CodPage() {
             <option value="">All Status</option>
             {ORDER_STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
           </select>
+          <DateRangeFilter
+            from={dateFrom} to={dateTo}
+            onFromChange={(v) => { setDateFrom(v); setPage(1); }}
+            onToChange={(v) => { setDateTo(v); setPage(1); }}
+            onClear={() => { setDateFrom(""); setDateTo(""); setPage(1); }}
+          />
         </div>
 
         {/* Table */}

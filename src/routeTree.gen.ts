@@ -93,7 +93,11 @@ import { Route as AdminDashboardProductAnalyticsRouteImport } from './routes/_ad
 import { Route as AdminDashboardOrderAnalysisRouteImport } from './routes/_admin.dashboard.order-analysis'
 import { Route as AdminCustomersWishlistRouteImport } from './routes/_admin.customers.wishlist'
 import { Route as AdminCustomersTicketsRouteImport } from './routes/_admin.customers.tickets'
+import { Route as AdminCustomersSimpleRouteImport } from './routes/_admin.customers.simple'
 import { Route as AdminCustomersReviewsRouteImport } from './routes/_admin.customers.reviews'
+import { Route as AdminCustomersPopupRouteImport } from './routes/_admin.customers.popup'
+import { Route as AdminCustomersMinimalRouteImport } from './routes/_admin.customers.minimal'
+import { Route as AdminCustomersAccountIdRouteImport } from './routes/_admin.customers.$accountId'
 import { Route as AdminCommsTemplatesRouteImport } from './routes/_admin.comms.templates'
 import { Route as AdminCommsBroadcastsRouteImport } from './routes/_admin.comms.broadcasts'
 import { Route as AdminCmsHomeSectionsRouteImport } from './routes/_admin.cms.home-sections'
@@ -559,9 +563,29 @@ const AdminCustomersTicketsRoute = AdminCustomersTicketsRouteImport.update({
   path: '/customers/tickets',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCustomersSimpleRoute = AdminCustomersSimpleRouteImport.update({
+  id: '/customers/simple',
+  path: '/customers/simple',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCustomersReviewsRoute = AdminCustomersReviewsRouteImport.update({
   id: '/customers/reviews',
   path: '/customers/reviews',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCustomersPopupRoute = AdminCustomersPopupRouteImport.update({
+  id: '/customers/popup',
+  path: '/customers/popup',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCustomersMinimalRoute = AdminCustomersMinimalRouteImport.update({
+  id: '/customers/minimal',
+  path: '/customers/minimal',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCustomersAccountIdRoute = AdminCustomersAccountIdRouteImport.update({
+  id: '/customers/$accountId',
+  path: '/customers/$accountId',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminCommsTemplatesRoute = AdminCommsTemplatesRouteImport.update({
@@ -746,7 +770,11 @@ export interface FileRoutesByFullPath {
   '/cms/home-sections': typeof AdminCmsHomeSectionsRoute
   '/comms/broadcasts': typeof AdminCommsBroadcastsRoute
   '/comms/templates': typeof AdminCommsTemplatesRoute
+  '/customers/$accountId': typeof AdminCustomersAccountIdRoute
+  '/customers/minimal': typeof AdminCustomersMinimalRoute
+  '/customers/popup': typeof AdminCustomersPopupRoute
   '/customers/reviews': typeof AdminCustomersReviewsRoute
+  '/customers/simple': typeof AdminCustomersSimpleRoute
   '/customers/tickets': typeof AdminCustomersTicketsRoute
   '/customers/wishlist': typeof AdminCustomersWishlistRoute
   '/dashboard/order-analysis': typeof AdminDashboardOrderAnalysisRoute
@@ -860,7 +888,11 @@ export interface FileRoutesByTo {
   '/cms/home-sections': typeof AdminCmsHomeSectionsRoute
   '/comms/broadcasts': typeof AdminCommsBroadcastsRoute
   '/comms/templates': typeof AdminCommsTemplatesRoute
+  '/customers/$accountId': typeof AdminCustomersAccountIdRoute
+  '/customers/minimal': typeof AdminCustomersMinimalRoute
+  '/customers/popup': typeof AdminCustomersPopupRoute
   '/customers/reviews': typeof AdminCustomersReviewsRoute
+  '/customers/simple': typeof AdminCustomersSimpleRoute
   '/customers/tickets': typeof AdminCustomersTicketsRoute
   '/customers/wishlist': typeof AdminCustomersWishlistRoute
   '/dashboard/order-analysis': typeof AdminDashboardOrderAnalysisRoute
@@ -977,7 +1009,11 @@ export interface FileRoutesById {
   '/_admin/cms/home-sections': typeof AdminCmsHomeSectionsRoute
   '/_admin/comms/broadcasts': typeof AdminCommsBroadcastsRoute
   '/_admin/comms/templates': typeof AdminCommsTemplatesRoute
+  '/_admin/customers/$accountId': typeof AdminCustomersAccountIdRoute
+  '/_admin/customers/minimal': typeof AdminCustomersMinimalRoute
+  '/_admin/customers/popup': typeof AdminCustomersPopupRoute
   '/_admin/customers/reviews': typeof AdminCustomersReviewsRoute
+  '/_admin/customers/simple': typeof AdminCustomersSimpleRoute
   '/_admin/customers/tickets': typeof AdminCustomersTicketsRoute
   '/_admin/customers/wishlist': typeof AdminCustomersWishlistRoute
   '/_admin/dashboard/order-analysis': typeof AdminDashboardOrderAnalysisRoute
@@ -1094,7 +1130,11 @@ export interface FileRouteTypes {
     | '/cms/home-sections'
     | '/comms/broadcasts'
     | '/comms/templates'
+    | '/customers/$accountId'
+    | '/customers/minimal'
+    | '/customers/popup'
     | '/customers/reviews'
+    | '/customers/simple'
     | '/customers/tickets'
     | '/customers/wishlist'
     | '/dashboard/order-analysis'
@@ -1208,7 +1248,11 @@ export interface FileRouteTypes {
     | '/cms/home-sections'
     | '/comms/broadcasts'
     | '/comms/templates'
+    | '/customers/$accountId'
+    | '/customers/minimal'
+    | '/customers/popup'
     | '/customers/reviews'
+    | '/customers/simple'
     | '/customers/tickets'
     | '/customers/wishlist'
     | '/dashboard/order-analysis'
@@ -1324,7 +1368,11 @@ export interface FileRouteTypes {
     | '/_admin/cms/home-sections'
     | '/_admin/comms/broadcasts'
     | '/_admin/comms/templates'
+    | '/_admin/customers/$accountId'
+    | '/_admin/customers/minimal'
+    | '/_admin/customers/popup'
     | '/_admin/customers/reviews'
+    | '/_admin/customers/simple'
     | '/_admin/customers/tickets'
     | '/_admin/customers/wishlist'
     | '/_admin/dashboard/order-analysis'
@@ -2005,11 +2053,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCustomersTicketsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/_admin/customers/simple': {
+      id: '/_admin/customers/simple'
+      path: '/customers/simple'
+      fullPath: '/customers/simple'
+      preLoaderRoute: typeof AdminCustomersSimpleRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/_admin/customers/reviews': {
       id: '/_admin/customers/reviews'
       path: '/customers/reviews'
       fullPath: '/customers/reviews'
       preLoaderRoute: typeof AdminCustomersReviewsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/customers/popup': {
+      id: '/_admin/customers/popup'
+      path: '/customers/popup'
+      fullPath: '/customers/popup'
+      preLoaderRoute: typeof AdminCustomersPopupRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/customers/minimal': {
+      id: '/_admin/customers/minimal'
+      path: '/customers/minimal'
+      fullPath: '/customers/minimal'
+      preLoaderRoute: typeof AdminCustomersMinimalRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/_admin/customers/$accountId': {
+      id: '/_admin/customers/$accountId'
+      path: '/customers/$accountId'
+      fullPath: '/customers/$accountId'
+      preLoaderRoute: typeof AdminCustomersAccountIdRouteImport
       parentRoute: typeof AdminRoute
     }
     '/_admin/comms/templates': {
@@ -2265,7 +2341,11 @@ interface AdminRouteChildren {
   AdminCmsHomeSectionsRoute: typeof AdminCmsHomeSectionsRoute
   AdminCommsBroadcastsRoute: typeof AdminCommsBroadcastsRoute
   AdminCommsTemplatesRoute: typeof AdminCommsTemplatesRoute
+  AdminCustomersAccountIdRoute: typeof AdminCustomersAccountIdRoute
+  AdminCustomersMinimalRoute: typeof AdminCustomersMinimalRoute
+  AdminCustomersPopupRoute: typeof AdminCustomersPopupRoute
   AdminCustomersReviewsRoute: typeof AdminCustomersReviewsRoute
+  AdminCustomersSimpleRoute: typeof AdminCustomersSimpleRoute
   AdminCustomersTicketsRoute: typeof AdminCustomersTicketsRoute
   AdminCustomersWishlistRoute: typeof AdminCustomersWishlistRoute
   AdminIntegrationsAccountingRoute: typeof AdminIntegrationsAccountingRoute
@@ -2374,7 +2454,11 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCmsHomeSectionsRoute: AdminCmsHomeSectionsRoute,
   AdminCommsBroadcastsRoute: AdminCommsBroadcastsRoute,
   AdminCommsTemplatesRoute: AdminCommsTemplatesRoute,
+  AdminCustomersAccountIdRoute: AdminCustomersAccountIdRoute,
+  AdminCustomersMinimalRoute: AdminCustomersMinimalRoute,
+  AdminCustomersPopupRoute: AdminCustomersPopupRoute,
   AdminCustomersReviewsRoute: AdminCustomersReviewsRoute,
+  AdminCustomersSimpleRoute: AdminCustomersSimpleRoute,
   AdminCustomersTicketsRoute: AdminCustomersTicketsRoute,
   AdminCustomersWishlistRoute: AdminCustomersWishlistRoute,
   AdminIntegrationsAccountingRoute: AdminIntegrationsAccountingRoute,

@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, Search, X, Edit3 } from "lucide-react";
@@ -187,7 +188,6 @@ function StaffSheet({ item, onClose, onSaved }: { item: StaffDetail | null; onCl
   });
 
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [designations, setDesignations] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
@@ -207,27 +207,26 @@ function StaffSheet({ item, onClose, onSaved }: { item: StaffDetail | null; onCl
     event.preventDefault();
 
     if (!form.firstName || !form.lastName) {
-      setError("First name and last name are required");
+      toast.error("First name and last name are required");
       return;
     }
 
     if (!isEdit) {
       if (!form.loginId || !form.password) {
-        setError("Login ID and password are required");
+        toast.error("Login ID and password are required");
         return;
       }
       if (form.password.length < 6) {
-        setError("Password must be at least 6 characters");
+        toast.error("Password must be at least 6 characters");
         return;
       }
       if (!form.designationId) {
-        setError("Designation is required");
+        toast.error("Designation is required");
         return;
       }
     }
 
     setSaving(true);
-    setError(null);
 
     try {
       if (isEdit && item) {
@@ -264,7 +263,7 @@ function StaffSheet({ item, onClose, onSaved }: { item: StaffDetail | null; onCl
       }
       onSaved();
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? err?.message ?? "Unable to save staff member.");
+      toast.error(err?.response?.data?.message ?? err?.message ?? "Unable to save staff member.");
     } finally {
       setSaving(false);
     }
@@ -283,10 +282,6 @@ function StaffSheet({ item, onClose, onSaved }: { item: StaffDetail | null; onCl
 
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-5 space-y-6">
-            {error && (
-              <div className="rounded-2xl border border-[#FEE2E2] bg-[#FEF2F2] px-4 py-3 text-[12px] text-[#B91C1C]">{error}</div>
-            )}
-
             {/* Personal Information */}
             <div>
               <div className="text-[12px] font-semibold text-[#374151] mb-3">Personal Information</div>

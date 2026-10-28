@@ -2,17 +2,13 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Package, TrendingUp, TrendingDown, AlertTriangle, XCircle, Zap, Clock } from "lucide-react";
 import { dashboardService } from "@/services/dashboard.service";
+import { DashboardDateFilter, defaultDashboardDate, type DashboardDateState } from "@/components/ui/dashboard-date-filter";
 
 export const Route = createFileRoute("/_admin/dashboard/product-analytics")({
   component: ProductAnalyticsPage,
 });
 
-const groupOptions = [
-  { value: "today", label: "Today" },
-  { value: "week", label: "Last 7 days" },
-  { value: "month", label: "This month" },
-  { value: "custom", label: "Custom" },
-];
+
 
 function PageHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
@@ -150,20 +146,25 @@ function SalesTable({ title, data }: { title: string; data: any[] }) {
 }
 
 function ProductAnalyticsPage() {
-  const [groupBy, setGroupBy] = useState("week");
+  const [date, setDate] = useState<DashboardDateState>(defaultDashboardDate("last_week"));
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
   const unwrap = (r: any) => (r && typeof r === 'object' && 'data' in r ? r.data : r);
 
-  const groupByValue = groupBy === 'last_week' ? 'week' : groupBy === 'this_month' ? 'month' : groupBy;
+  const isCustomReady = date.preset !== "custom" || (!!date.startDate && !!date.endDate);
+  const apiParams = {
+    groupBy: date.groupBy,
+    ...(date.preset === "custom" ? { startDate: date.startDate, endDate: date.endDate } : {}),
+  };
 
   const loadData = async () => {
+    if (!isCustomReady) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await dashboardService.getProductAnalytics({ groupBy: groupByValue });
+      const res = await dashboardService.getProductAnalytics(apiParams);
       setData(unwrap(res));
     } catch (err: any) {
       setError(err.message || "Failed to load data");
@@ -172,19 +173,13 @@ function ProductAnalyticsPage() {
     }
   };
 
-  useEffect(() => { loadData(); }, [groupByValue]);
+  useEffect(() => { loadData(); }, [date]);
 
   return (
     <div className="p-6">
       <div className="flex items-start justify-between">
         <PageHeader title="Product Analytics" subtitle="Track product performance, stock levels, and sales velocity." />
-        <select
-          value={groupBy}
-          onChange={(e) => setGroupBy(e.target.value)}
-          className="h-8 rounded-md border border-[#E5E7EB] bg-white px-3 text-[12px]"
-        >
-          {groupOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        <DashboardDateFilter value={date} onChange={setDate} />
       </div>
 
       {loading && <div className="py-12 text-center text-[12px] text-[#6B7280]">Loading...</div>}

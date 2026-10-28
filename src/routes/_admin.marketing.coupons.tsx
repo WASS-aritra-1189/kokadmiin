@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
@@ -188,13 +189,11 @@ function CouponSheet({ item, onClose, onSaved }: { item: Coupon | null; onClose:
     description: item?.description ?? "",
   });
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const inp = "h-8 w-full rounded-md border border-[#E5E7EB] bg-white px-2 text-[12px] outline-none focus:border-[#4F46E5]";
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setSaving(true);
     try {
       const payload = {
@@ -213,7 +212,7 @@ function CouponSheet({ item, onClose, onSaved }: { item: Coupon | null; onClose:
       onSaved();
     } catch (err: any) {
       const msg = err.response?.data?.data?.errors?.[0] ?? err.response?.data?.message ?? "Something went wrong";
-      setError(Array.isArray(msg) ? msg[0] : msg);
+      toast.error(Array.isArray(msg) ? msg[0] : msg);
     } finally { setSaving(false); }
   };
 
@@ -229,7 +228,6 @@ function CouponSheet({ item, onClose, onSaved }: { item: Coupon | null; onClose:
         </div>
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
-            {error && <div className="rounded-lg border border-[#FEE2E2] bg-[#FEF2F2] px-3 py-2 text-[12px] text-[#B91C1C]">{error}</div>}
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2">
                 <label className="mb-1 block text-[11px] font-medium text-[#374151]">Code *</label>

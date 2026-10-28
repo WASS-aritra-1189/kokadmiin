@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Download, Plus, Search, Upload, X, FileSpreadsheet, FileText, Eye } from "lucide-react";
@@ -41,6 +42,7 @@ function BooksPage() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const [tagFilter, setTagFilter] = useState<"" | "isNewRelease" | "isStaffPick" | "isBestSeller">("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -59,6 +61,9 @@ function BooksPage() {
       ...(s !== "All" ? { status: s } : {}),
       ...(minPrice !== "" ? { minPrice: Number(minPrice) } : {}),
       ...(maxPrice !== "" ? { maxPrice: Number(maxPrice) } : {}),
+      ...(tagFilter === "isNewRelease" ? { isNewRelease: true } : {}),
+      ...(tagFilter === "isStaffPick" ? { isStaffPick: true } : {}),
+      ...(tagFilter === "isBestSeller" ? { isBestSeller: true } : {}),
     }));
   };
 
@@ -67,17 +72,15 @@ function BooksPage() {
   setViewBook(null);
   try {
     const response = await booksService.findOne(bookId);
-    console.log("[BookView] response:", response); // Should be the book object
     setViewBook(response);
   } catch (err) {
-    console.error("Failed to fetch book details:", err);
-    alert("Failed to load book details");
+    toast.error("Failed to load book details");
   } finally {
     setViewLoading(false);
   }
 };
 
-  useEffect(() => { load(); }, [page, statusFilter, limit]);
+  useEffect(() => { load(); }, [page, statusFilter, limit, tagFilter]);
 
   useEffect(() => {
     const t = setTimeout(() => { setPage(1); load(1, statusFilter, q); }, 400);
@@ -92,7 +95,7 @@ function BooksPage() {
   // Show error in UI
   useEffect(() => {
     if (error) {
-      alert(error); // Or use a toast
+      toast.error(error); // Or use a toast
     }
   }, [error]);
 
@@ -197,6 +200,19 @@ function BooksPage() {
             </select>
           </label>
           <label className="flex items-center gap-1.5 text-[11px] text-[#6B7280]">
+            Tag:
+            <select
+              value={tagFilter}
+              onChange={(e) => { setTagFilter(e.target.value as typeof tagFilter); setPage(1); }}
+              className="h-8 rounded-md border border-[#E5E7EB] bg-white px-2 text-[12px] text-[#111827] outline-none"
+            >
+              <option value="">All</option>
+              <option value="isNewRelease">🆕 New Release</option>
+              <option value="isStaffPick">★ Staff Pick</option>
+              <option value="isBestSeller">🔥 Best Seller</option>
+            </select>
+          </label>
+          <label className="flex items-center gap-1.5 text-[11px] text-[#6B7280]">
             Price:
             <input
               type="number" min={0} placeholder="Min ₹"
@@ -273,7 +289,7 @@ function BooksPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-3 py-2 font-mono text-[11px] text-[#6B7280]">{b.isbn}</td>
+                  <td className="px-3 py-2 font-mono text-[11px] uppercase text-[#6B7280]">{b.isbn}</td>
                   <td className="px-3 py-2 text-[#4B5563]">{b.productCategory?.name ?? "—"}</td>
                   <td className="px-3 py-2 text-[#4B5563]">{b.genre?.name ?? "—"}</td>
                   <td className="px-3 py-2 text-[#4B5563]">{b.language?.name ?? "—"}</td>
@@ -287,7 +303,7 @@ function BooksPage() {
                       onClick={async () => {
                         if (b.quantity === 0) return;
                         try { await booksService.toggleStaffPick(b.id, !b.isStaffPick); load(); }
-                        catch (err) { console.error("Failed to toggle staff pick", err); }
+                        catch (err) {  }
                       }}
                       disabled={b.quantity === 0 && !b.isStaffPick}
                       title={b.quantity === 0 && !b.isStaffPick ? "Out of stock" : undefined}
@@ -397,7 +413,6 @@ function BooksPage() {
                   await booksService.updateStatus(statusChange.book.id, statusChange.newStatus);
                   load();
                 } catch (err) {
-                  console.error("Failed to update status", err);
                 }
               }}
               className="bg-[#4F46E5] hover:bg-[#4338CA]"
@@ -454,7 +469,7 @@ function NewReleaseCell({ book, onSaved }: { book: BookItem; onSaved: () => void
     try {
       await booksService.toggleNewRelease(book.id, !book.isNewRelease);
       onSaved();
-    } catch (err) { console.error("Failed to toggle new release", err); }
+    } catch (err) {  }
     finally { setSaving(false); }
   };
 
@@ -531,7 +546,7 @@ function BestSellerCell({ book, onSaved }: { book: BookItem; onSaved: () => void
     try {
       await booksService.toggleBestSeller(book.id, !book.isBestSeller);
       onSaved();
-    } catch (err) { console.error("Failed to toggle best seller", err); }
+    } catch (err) {  }
     finally { setSaving(false); }
   };
 
@@ -644,7 +659,7 @@ function BookDetailView({ book, onClose, loading }: BookDetailViewProps) {
               <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[13px]">
                 <div>
                   <span className="text-[#6B7280]">ISBN:</span>
-                  <span className="ml-2 font-mono">{book.isbn || "—"}</span>
+                  <span className="ml-2 font-mono uppercase">{book.isbn || "—"}</span>
                 </div>
                 <div>
                   <span className="text-[#6B7280]">Status:</span>
@@ -873,13 +888,12 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log("[BookSheet] mounting — loading dropdowns");
-    catalogApi.authors().then((a) => { console.log("[BookSheet] authors:", a); setAuthors(a); });
-    catalogApi.productCategories().then((c) => { console.log("[BookSheet] categories:", c); setCategories(c); });
-    catalogApi.genres().then((g) => { console.log("[BookSheet] genres:", g); setGenres(g); });
-    catalogApi.languages().then((l) => { console.log("[BookSheet] languages:", l); setLanguages(l); });
-    catalogApi.boards().then((b) => { console.log("[BookSheet] boards:", b); setBoards(b); });
-    catalogApi.publishers().then((p) => { console.log("[BookSheet] publishers:", p); setPublishers(p); });
+    catalogApi.authors().then((a) => {  setAuthors(a); });
+    catalogApi.productCategories().then((c) => {  setCategories(c); });
+    catalogApi.genres().then((g) => {  setGenres(g); });
+    catalogApi.languages().then((l) => {  setLanguages(l); });
+    catalogApi.boards().then((b) => {  setBoards(b); });
+    catalogApi.publishers().then((p) => {  setPublishers(p); });
   }, []);
 
   // When board changes, load classes
@@ -955,7 +969,6 @@ function BookSheet({ book, onClose, onSaved }: BookSheetProps) {
         await booksService.uploadInsiderImages(bookId, insiderFiles);
         setInsiderFiles([]);
       } catch (err) {
-        console.error("Failed to upload insider images", err);
       }
       setUploadingInsider(false);
     }

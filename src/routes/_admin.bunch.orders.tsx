@@ -1,10 +1,22 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import { Search, X, ExternalLink, RefreshCw } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { Search, X, ExternalLink, RefreshCw, User, Download, FileText } from "lucide-react";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
 import { bunchOrderService, type BunchOrder } from "@/services/bunch.service";
 import { PaginationBar } from "@/components/ui/pagination-bar";
+import { api } from "@/lib/axios";
 
-export const Route = createFileRoute("/_admin/bunch/orders")({ component: Page });
+export const Route = createFileRoute("/_admin/bunch/orders")({
+  component: Page,
+  validateSearch: (search: Record<string, unknown>) => {
+    return {
+      accountId: search?.accountId as string | undefined,
+    };
+  },
+  beforeLoad: () => {
+  },
+});
 
 const LIMIT = 10;
 
@@ -37,42 +49,90 @@ const ORDER_STATUS_COLOR: Record<string, string> = {
 };
 
 function Page() {
+  const search = Route.useSearch();
+  const accountId = search.accountId;
   const [items, setItems] = useState<BunchOrder[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
   const [loading, setLoading] = useState(false);
   const [detail, setDetail] = useState<BunchOrder | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
-// In _admin.bunch.orders.tsx
-const load = async (p = page, search = q) => {
-  setLoading(true);
-  try {
-    const res = await bunchOrderService.getAll({ page: p ,...(search ? { search } : {}) });
-    console.log("[BUNCH ORDERS] response:", res);
-    // Safely extract data
-    const dataArray = Array.isArray(res.data) ? res.data : (res.data?.data ?? []);
-    setItems(dataArray);
-    setTotal(res.total ?? (Array.isArray(res.data) ? res.data.length : 0));
-  } catch (err) {
-    console.error("[BUNCH ORDERS] load error:", err);
-  } finally {
-    setLoading(false);
-  }
-};
-
-  useEffect(() => { load(); }, [page]);
+  useEffect(() => { 
+    setLoading(true);
+    bunchOrderService.getAll({ 
+      page,
+      limit: LIMIT,
+      ...(q ? { search: q } : {}),
+      ...(accountId ? { accountId } : {}),
+      ...(dateFrom ? { createdFrom: dateFrom } : {}),
+      ...(dateTo ? { createdTo: dateTo } : {}),
+    }).then((res) => {
+      // The service returns { data: [], total: X, page: Y, limit: Z }
+      setItems(res.data || []);
+      setTotal(res.total || 0);
+    }).catch((err) => {
+      setItems([]);
+      setTotal(0);
+    }).finally(() => {
+      setLoading(false);
+    });
+  }, [page, q, accountId, dateFrom, dateTo]);
 
   const totalPages = Math.max(1, Math.ceil(total / LIMIT));
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      // Build query parameters
+      const params = new URLSearchParams();
+      if (q) params.append("search", q);
+      if (accountId) params.append("accountId", accountId);
+      if (dateFrom) params.append("createdFrom", dateFrom);
+      if (dateTo) params.append("createdTo", dateTo);
+      
+      // Make the API call
+      const response = await api.get(`/bunch-orders/export/excel?${params.toString()}`, {
+        responseType: "blob",
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `bunch_orders_export_${new Date().toISOString().split("T")[0]}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      toast.error("Failed to export bunch orders. Please try again.");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="p-6">
       <div className="text-[11px] font-medium uppercase tracking-wider text-[#6B7280]">Bunch</div>
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-[22px] font-semibold tracking-tight">Bunch Orders</h1>
-          <p className="mt-1 text-[13px] text-[#6B7280]">All bunch purchase orders with payment and shipping status.</p>
+          <h1 className="text-[22px] font-semibold tracking-tight">Bunch Orders{accountId ? " for User" : ""}</h1>
+          <p className="mt-1 text-[13px] text-[#6B7280]">
+            {accountId ? "Viewing bunch orders for specific user" : "All bunch purchase orders with payment and shipping status."}
+          </p>
         </div>
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="flex items-center gap-1.5 h-8 rounded-md bg-[#10B981] px-3 text-[12px] font-medium text-white hover:bg-[#059669] disabled:opacity-50"
+        >
+          <Download className="h-3.5 w-3.5" />
+          {exporting ? "Exporting…" : "Export Excel"}
+        </button>
       </div>
 
       <div className="mt-5 grid grid-cols-4 gap-3">
@@ -90,17 +150,29 @@ const load = async (p = page, search = q) => {
       </div>
 
       <div className="mt-5 overflow-hidden rounded-lg border border-[#E5E7EB] bg-white">
-        <div className="flex items-center gap-2 border-b border-[#F3F4F6] px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2 border-b border-[#F3F4F6] px-3 py-2">
+          {accountId && (
+            <div className="flex items-center gap-2 rounded-md bg-[#EEF2FF] px-3 py-1.5 text-[12px] font-medium text-[#4F46E5]">
+              <User className="h-3.5 w-3.5" />
+              <span>Viewing user bunch orders</span>
+            </div>
+          )}
           <div className="relative flex-1 min-w-[220px]">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#9CA3AF]" />
             <input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") { setPage(1); load(1, q); } }}
+              onKeyDown={(e) => { if (e.key === "Enter") setPage(1); }}
               placeholder="Search orders…"
               className="h-8 w-full rounded-md border border-[#E5E7EB] bg-white pl-8 pr-2 text-[12px] outline-none focus:border-[#4F46E5]"
             />
           </div>
+          <DateRangeFilter
+            from={dateFrom} to={dateTo}
+            onFromChange={(v) => { setDateFrom(v); setPage(1); }}
+            onToChange={(v) => { setDateTo(v); setPage(1); }}
+            onClear={() => { setDateFrom(""); setDateTo(""); setPage(1); }}
+          />
         </div>
 
         <div className="overflow-x-auto">
@@ -140,12 +212,30 @@ const load = async (p = page, search = q) => {
                   <td className="px-4 py-2.5 text-[#6B7280] font-mono">{item.awb ?? "—"}</td>
                   <td className="px-4 py-2.5 text-[#6B7280]">{new Date(item.createdAt).toLocaleDateString("en-IN")}</td>
                   <td className="px-4 py-2.5 text-right">
-                    <button
-                      onClick={() => setDetail(item)}
-                      className="rounded-md border border-[#E5E7EB] px-2 py-1 text-[11px] font-medium text-[#374151] hover:bg-[#F9FAFB]"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                    </button>
+                    <div className="flex justify-end gap-1">
+                      <button
+                        onClick={() => setDetail(item)}
+                        className="rounded-md border border-[#E5E7EB] p-1 text-[#374151] hover:bg-[#F9FAFB]"
+                        title="View details"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          try {
+                            const { downloadBunchOrderInvoice } = await import("@/lib/order-invoice");
+                            await downloadBunchOrderInvoice(item);
+                          } catch {
+                            toast.error("Failed to download invoice.");
+                          }
+                        }}
+                        className="rounded-md border border-[#E5E7EB] p-1 text-[#374151] hover:bg-[#F9FAFB]"
+                        title="Download invoice PDF"
+                      >
+                        <FileText className="h-3 w-3" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -183,8 +273,29 @@ function OrderDrawer({
   const [trackLoading, setTrackLoading] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [downloadingInvoice, setDownloadingInvoice] = useState(false);
 
   const isCODPending = order.paymentMethod === "COD" && order.paymentStatus === "PENDING";
+
+  const handleDownloadInvoice = async () => {
+    setDownloadingInvoice(true);
+    try {
+      let enriched = { ...order };
+      // Fetch full detail to get bunch.books if not already present
+      if (!enriched.items && !enriched.bunch?.books) {
+        try {
+          const detail = await bunchOrderService.findOne(order.id);
+          enriched = { ...enriched, ...detail };
+        } catch {}
+      }
+      const { downloadBunchOrderInvoice } = await import("@/lib/order-invoice");
+      await downloadBunchOrderInvoice(enriched);
+    } catch {
+      toast.error("Failed to download invoice.");
+    } finally {
+      setDownloadingInvoice(false);
+    }
+  };
 
   const handleConfirmCOD = async () => {
     if (!confirm("Confirm that payment has been received for this COD order?")) return;
@@ -274,6 +385,15 @@ function OrderDrawer({
               <option key={s} value={s}>{s.replace(/_/g, " ")}</option>
             ))}
           </select>
+
+          <button
+            onClick={handleDownloadInvoice}
+            disabled={downloadingInvoice}
+            className="flex items-center gap-1.5 rounded-md border border-[#E5E7EB] bg-white px-2.5 py-1.5 text-[11px] font-medium hover:bg-[#F9FAFB] disabled:opacity-60"
+          >
+            <FileText className="h-3 w-3" />
+            {downloadingInvoice ? "Downloading…" : "Invoice PDF"}
+          </button>
 
           {order.shipmentId && (
             <button

@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useCallback } from "react";
 import { Search, Loader2, Plus, Pencil, Trash2, X, Check } from "lucide-react";
@@ -11,7 +12,6 @@ function FAQPage() {
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [activeFilter, setActiveFilter] = useState<"" | "true" | "false">("");
@@ -21,7 +21,6 @@ function FAQPage() {
 
   const fetchFaqs = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
       const res = await faqService.getAll({
         page,
@@ -32,7 +31,7 @@ function FAQPage() {
       setFaqs(res.data.data);
       setTotal(res.data.total);
     } catch {
-      setError("Failed to load FAQs.");
+      toast.error("Failed to load FAQs.");
     } finally {
       setLoading(false);
     }
@@ -64,7 +63,7 @@ function FAQPage() {
       setFaqs((prev) => prev.filter((f) => f.id !== id));
       setTotal((t) => t - 1);
     } catch {
-      alert("Failed to delete FAQ.");
+      toast.error("Failed to delete FAQ.");
     }
   };
 
@@ -73,7 +72,7 @@ function FAQPage() {
       const updated = await faqService.update(faq.id, { isActive: !faq.isActive });
       setFaqs((prev) => prev.map((f) => (f.id === faq.id ? { ...f, ...updated } : f)));
     } catch {
-      alert("Failed to update FAQ.");
+      toast.error("Failed to update FAQ.");
     }
   };
 
@@ -120,8 +119,6 @@ function FAQPage() {
             <Loader2 className="h-5 w-5 animate-spin mr-2" />
             <span className="text-[13px]">Loading FAQs…</span>
           </div>
-        ) : error ? (
-          <div className="flex items-center justify-center py-16 text-red-500 text-[13px]">{error}</div>
         ) : faqs.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-[#9CA3AF]">
             <span className="text-[13px]">No FAQs found.</span>
@@ -203,16 +200,14 @@ function FAQFormModal({ faq, onClose, onSaved }: {
   const [category, setCategory] = useState(faq?.category ?? "");
   const [isActive, setIsActive] = useState(faq?.isActive ?? true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!question.trim() || !answer.trim()) {
-      setError("Question and answer are required.");
+      toast.error("Question and answer are required.");
       return;
     }
     setSaving(true);
-    setError(null);
     const payload: CreateFAQPayload = {
       question: question.trim(),
       answer: answer.trim(),
@@ -225,7 +220,7 @@ function FAQFormModal({ faq, onClose, onSaved }: {
         : await faqService.create(payload);
       onSaved(saved);
     } catch {
-      setError("Failed to save FAQ. Please try again.");
+      toast.error("Failed to save FAQ. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -283,8 +278,6 @@ function FAQFormModal({ faq, onClose, onSaved }: {
             />
             <label htmlFor="isActive" className="text-[13px] text-[#374151]">Active (visible on public FAQ page)</label>
           </div>
-
-          {error && <p className="text-[12px] text-red-500">{error}</p>}
 
           <div className="flex justify-end gap-2 pt-1">
             <button type="button" onClick={onClose} className="h-8 rounded-md border border-[#E5E7EB] px-4 text-[12px] text-[#374151] hover:bg-[#F3F4F6]">

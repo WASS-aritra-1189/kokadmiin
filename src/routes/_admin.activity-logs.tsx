@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Search, Filter, Clock, User, Monitor, Globe, FileText } from "lucide-react";
@@ -53,7 +54,6 @@ function ActivityLogsPage() {
       setItems(res?.data?.data ?? []);
       setTotal(res?.data?.total ?? 0);
     } catch (err) {
-      console.error("Failed to load activity logs:", err);
     } finally {
       setLoading(false);
     }

@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
 import { Plus, Search, X, Eye } from "lucide-react";
@@ -31,7 +32,6 @@ function Page() {
       setItems(Array.isArray(res.data) ? res.data : []);
       setTotal(res.total ?? 0);
     } catch (err) {
-      console.error("[BUNCH INDEX] load error:", err);
     } finally { setLoading(false); }
   };
 
@@ -42,8 +42,7 @@ function Page() {
       const response = await bunchService.findOne(bunchId);
       setViewItem(response);
     } catch (err) {
-      console.error("Failed to fetch bunch details:", err);
-      alert("Failed to load bunch details");
+      toast.error("Failed to load bunch details");
     } finally {
       setViewLoading(false);
     }
@@ -370,7 +369,6 @@ function BunchDetailView({ bunch, onClose, loading }: { bunch: Bunch; onClose: (
           <div className="border-t border-[#F3F4F6] pt-4 text-[11px] text-[#6B7280]">
             <div className="flex gap-6">
               <span>Created: {new Date(bunch.createdAt).toLocaleString()}</span>
-              <span>ID: <span className="font-mono text-[10px]">{bunch.id}</span></span>
             </div>
           </div>
         </div>

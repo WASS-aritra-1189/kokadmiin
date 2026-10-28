@@ -4,16 +4,11 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, Pie, PieChart, Responsiv
 import { Download, TrendingUp, TrendingDown, DollarSign, ShoppingCart, RotateCcw, FileSpreadsheet, FileText } from "lucide-react";
 import { dashboardService } from "@/services/dashboard.service";
 import { exportToPDF, exportToExcel } from "@/lib/export";
+import { DashboardDateFilter, defaultDashboardDate, type DashboardDateState } from "@/components/ui/dashboard-date-filter";
 
 export const Route = createFileRoute("/_admin/reports/sales")({
   component: SalesReportPage,
 });
-
-const groupOptions = [
-  { value: "today", label: "Today" },
-  { value: "last_week", label: "Last 7 days" },
-  { value: "this_month", label: "This month" },
-];
 
 function currency(v: number) {
   return new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(v);
@@ -37,7 +32,7 @@ function KpiCard({ label, value, subValue, icon: Icon, color, invert }: {
 }
 
 function SalesReportPage() {
-  const [groupBy, setGroupBy] = useState("last_week");
+  const [date, setDate] = useState<DashboardDateState>(defaultDashboardDate("last_week"));
   const [loading, setLoading] = useState(false);
   const [overview, setOverview] = useState<any>(null);
   const [revenueTrend, setRevenueTrend] = useState<any>(null);
@@ -46,19 +41,21 @@ function SalesReportPage() {
   const [salesByLocation, setSalesByLocation] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Map filter to groupBy for different APIs
-  const groupByValue = groupBy === 'last_week' ? 'week' : groupBy === 'this_month' ? 'month' : groupBy;
+  const isCustomReady = date.preset !== "custom" || (!!date.startDate && !!date.endDate);
+  const filterParams = { filter: date.preset, ...(date.preset === "custom" ? { startDate: date.startDate, endDate: date.endDate } : {}) };
+  const graphParams  = { groupBy: date.groupBy,  ...(date.preset === "custom" ? { startDate: date.startDate, endDate: date.endDate } : {}) };
 
   const loadData = async () => {
+    if (!isCustomReady) return;
     setLoading(true);
     setError(null);
     try {
       const [ov, trend, byCat, byPay, byLoc] = await Promise.all([
-        dashboardService.getSalesOverview({ filter: groupBy }),
-        dashboardService.getRevenueTrend({ groupBy: groupByValue }),
-        dashboardService.getSalesByCategory({ groupBy: groupByValue }),
-        dashboardService.getSalesByPaymentMethod({ groupBy: groupByValue }),
-        dashboardService.getSalesByLocation({ groupBy: groupByValue }),
+        dashboardService.getSalesOverview(filterParams),
+        dashboardService.getRevenueTrend(graphParams),
+        dashboardService.getSalesByCategory(graphParams),
+        dashboardService.getSalesByPaymentMethod(graphParams),
+        dashboardService.getSalesByLocation(graphParams),
       ]);
       setOverview(ov);
       setRevenueTrend(trend);
@@ -92,7 +89,7 @@ function SalesReportPage() {
     exportToExcel({ title: 'Sales by Location', filename: 'sales-by-location', columns, data: salesByLocation });
   };
 
-  useEffect(() => { loadData(); }, [groupBy]);
+  useEffect(() => { loadData(); }, [date]);
 
   return (
     <div className="p-6">
@@ -103,13 +100,7 @@ function SalesReportPage() {
           <p className="mt-1 text-[13px] text-[#6B7280]">Track sales performance, revenue trends, and payment analysis.</p>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            value={groupBy}
-            onChange={(e) => setGroupBy(e.target.value)}
-            className="h-8 rounded-md border border-[#E5E7EB] bg-white px-3 text-[12px]"
-          >
-            {groupOptions.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-          </select>
+          <DashboardDateFilter value={date} onChange={setDate} />
           <div className="relative group">
             <button className="flex h-8 items-center gap-1.5 rounded-md border border-[#E5E7EB] bg-white px-3 text-[12px] font-medium">
               <Download className="h-3.5 w-3.5" />Export

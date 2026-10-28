@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
@@ -22,7 +23,6 @@ function BlogPage() {
   const [posts, setPosts] = useState<Blog[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<BlogStatus | "">("");
@@ -34,7 +34,6 @@ function BlogPage() {
 
   const fetchPosts = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
       const res = await blogService.getAll({
         page, limit,
@@ -45,7 +44,7 @@ function BlogPage() {
       setPosts(res.data.data);
       setTotal(res.data.total);
     } catch {
-      setError("Failed to load blog posts.");
+      toast.error("Failed to load blog posts.");
     } finally {
       setLoading(false);
     }
@@ -75,7 +74,7 @@ function BlogPage() {
       setPosts((prev) => prev.filter((p) => p.id !== id));
       setTotal((t) => t - 1);
     } catch {
-      alert("Failed to delete post.");
+      toast.error("Failed to delete post.");
     }
   };
 
@@ -84,7 +83,7 @@ function BlogPage() {
       const updated = await blogService.changeStatus(post.id, status);
       setPosts((prev) => prev.map((p) => (p.id === post.id ? { ...p, ...updated } : p)));
     } catch {
-      alert("Failed to update status.");
+      toast.error("Failed to update status.");
     }
   };
 
@@ -289,7 +288,6 @@ function BlogFormDrawer({ post, onClose, onSaved }: {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(post?.coverImage ?? null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<"content" | "seo">("content");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -297,9 +295,8 @@ function BlogFormDrawer({ post, onClose, onSaved }: {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !content.trim()) { setError("Title and content are required."); return; }
+    if (!title.trim() || !content.trim()) { toast.error("Title and content are required."); return; }
     setSaving(true);
-    setError(null);
     const fields: Record<string, string | undefined> = {
       title: title.trim(),
       slug: slug.trim() || undefined,
@@ -317,7 +314,7 @@ function BlogFormDrawer({ post, onClose, onSaved }: {
         : await blogService.create(fields, file ?? undefined);
       onSaved(saved);
     } catch {
-      setError("Failed to save post. Please try again.");
+      toast.error("Failed to save post. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -427,8 +424,6 @@ function BlogFormDrawer({ post, onClose, onSaved }: {
               </>
             )}
           </div>
-
-          {error && <p className="px-5 pb-2 text-[12px] text-red-500">{error}</p>}
 
           <div className="flex justify-end gap-2 border-t border-[#E5E7EB] px-5 py-3 shrink-0">
             <button type="button" onClick={onClose} className="h-8 rounded-md border border-[#E5E7EB] px-4 text-[12px] text-[#374151] hover:bg-[#F3F4F6]">

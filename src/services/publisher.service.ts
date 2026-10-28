@@ -29,7 +29,7 @@ export interface PublisherPayload {
 const wrap = (r: any) => r.data;
 
 export const publisherService = {
-  getAll: (params: { page?: number; limit?: number; search?: string }) =>
+  getAll: (params: { page?: number; limit?: number; search?: string; isFeatured?: boolean }) =>
     api.get("/publishers", { params }).then(wrap),
   create: (data: PublisherPayload) => api.post("/publishers", data).then(wrap),
   update: (id: string, data: Partial<PublisherPayload>) => api.patch(`/publishers/${id}`, data).then(wrap),

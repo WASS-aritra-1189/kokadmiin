@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, X, Trash2, Pencil } from "lucide-react";
@@ -127,12 +128,10 @@ function TemplateSheet({ item, onClose, onSaved }: { item: CommTemplate | null; 
     status: item?.status ?? "ACTIVE",
   });
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const inp = "h-8 w-full rounded-md border border-[#E5E7EB] bg-white px-2 text-[12px] outline-none focus:border-[#4F46E5]";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setSaving(true);
     try {
       const payload = {
@@ -143,7 +142,7 @@ function TemplateSheet({ item, onClose, onSaved }: { item: CommTemplate | null; 
       else await commTemplateService.create(payload);
       onSaved();
     } catch (err: any) {
-      setError(err.response?.data?.message ?? "Something went wrong");
+      toast.error(err.response?.data?.message ?? "Something went wrong");
     } finally { setSaving(false); }
   };
 
@@ -159,7 +158,6 @@ function TemplateSheet({ item, onClose, onSaved }: { item: CommTemplate | null; 
         </div>
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
-            {error && <div className="rounded-lg border border-[#FEE2E2] bg-[#FEF2F2] px-3 py-2 text-[12px] text-[#B91C1C]">{error}</div>}
             <div>
               <label className="mb-1 block text-[11px] font-medium text-[#374151]">Name *</label>
               <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Welcome Email" className={inp} />

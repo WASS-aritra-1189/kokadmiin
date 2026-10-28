@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, Search, X } from "lucide-react";
@@ -167,7 +168,6 @@ function SubjectSheet({ item, onClose, onSaved }: { item: Subject | null; onClos
   const [boards, setBoards] = useState<{ id: string; name: string }[]>([]);
   const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => { catalogApi.boards().then(setBoards); }, []);
 
@@ -182,7 +182,6 @@ function SubjectSheet({ item, onClose, onSaved }: { item: Subject | null; onClos
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setSaving(true);
     try {
       if (isEdit) { await subjectService.update(item.id, form); }
@@ -190,7 +189,7 @@ function SubjectSheet({ item, onClose, onSaved }: { item: Subject | null; onClos
       onSaved();
     } catch (err: any) {
       const msg = err.response?.data?.data?.errors?.[0] ?? err.response?.data?.message ?? "Something went wrong";
-      setError(Array.isArray(msg) ? msg[0] : msg);
+      toast.error(Array.isArray(msg) ? msg[0] : msg);
     } finally {
       setSaving(false);
     }
@@ -209,7 +208,6 @@ function SubjectSheet({ item, onClose, onSaved }: { item: Subject | null; onClos
 
         <form onSubmit={handleSubmit} className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-5 space-y-4">
-            {error && <div className="rounded-lg border border-[#FEE2E2] bg-[#FEF2F2] px-3 py-2 text-[12px] text-[#B91C1C]">{error}</div>}
 
             <div>
               <label className="mb-1 block text-[11px] font-medium text-[#374151]">Subject name *</label>

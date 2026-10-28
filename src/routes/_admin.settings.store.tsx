@@ -1,5 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { SettingsShell, Section, Field, TextInput, Select, Toggle, Badge } from "@/components/admin/SettingsShell";
+import { settingsService, type Setting } from "@/services/settings.service";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_admin/settings/store")({
   component: StoreSettings,
@@ -7,11 +10,52 @@ export const Route = createFileRoute("/_admin/settings/store")({
 });
 
 function StoreSettings() {
+  const [setting, setSetting] = useState<Setting | null>(null);
+  const [showBunchButton, setShowBunchButton] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    settingsService.getAll({ limit: 1 }).then((res: any) => {
+      const data: Setting[] = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+      if (data.length > 0) {
+        setSetting(data[0]);
+        setShowBunchButton(data[0].showBunchButton ?? true);
+      }
+    });
+  }, []);
+
+  const handleToggleBunch = async (val: boolean) => {
+    setShowBunchButton(val);
+    if (!setting?.id) return;
+    setSaving(true);
+    try {
+      await settingsService.update(setting.id, { showBunchButton: val });
+      toast.success(val ? "Bunches button enabled" : "Bunches button hidden");
+    } catch {
+      toast.error("Failed to save");
+      setShowBunchButton(!val);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <SettingsShell
       title="Store"
       description="Storefront behavior, catalog defaults and checkout policies."
     >
+      <Section title="Header Features" description="Control which buttons and links appear in the storefront header.">
+        <div className="grid gap-2">
+          <Toggle
+            label="Show Bunches button"
+            checked={showBunchButton}
+            onChange={handleToggleBunch}
+            description={`The "Bunches" link in the header navigation. Currently ${showBunchButton ? "visible" : "hidden"} on the storefront.`}
+            disabled={saving}
+          />
+        </div>
+      </Section>
+
       <Section title="Storefront" description="Public-facing bookstore configuration.">
         <Field label="Storefront URL" cols={2}>
           <TextInput defaultValue="www.sapnabooks.in" />

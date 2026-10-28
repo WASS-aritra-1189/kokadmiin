@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowLeft, Loader2, Plus } from "lucide-react";
@@ -12,7 +13,6 @@ const STATUS_OPTIONS = ["ACTIVE", "PENDING", "INACTIVE", "REJECTED"];
 function SchoolCreatePage() {
   const navigate = useNavigate();
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -31,14 +31,13 @@ function SchoolCreatePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim()) { setError("School name is required."); return; }
+    if (!form.name.trim()) { toast.error("School name is required."); return; }
     setSaving(true);
-    setError(null);
     try {
       await schoolService.create(form);
       navigate({ to: "/admin/schools/" });
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? "Failed to create school.");
+      toast.error(err?.response?.data?.message ?? "Failed to create school.");
     } finally {
       setSaving(false);
     }

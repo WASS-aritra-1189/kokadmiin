@@ -152,6 +152,7 @@ export interface OrdersQuery {
   search?: string;
   createdFrom?: string;
   createdTo?: string;
+  accountId?: string;
 }
 
 export const ordersService = {

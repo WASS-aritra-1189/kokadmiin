@@ -1,10 +1,12 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Loader2, Plus, Trash2, X, GripVertical, Eye, EyeOff, Pencil,
-  BookOpen, Sparkles, Star, LayoutGrid, Building2, UserRound, Rows3,
+  BookOpen, Sparkles, Star, LayoutGrid, Building2, UserRound, Rows3, ListChecks,
 } from "lucide-react";
 import { homeSectionService, type HomeSection } from "@/services/home-section.service";
+import { booksService } from "@/services/books.service";
 
 export const Route = createFileRoute("/_admin/cms/home-sections")({
   component: HomeSectionsPage,
@@ -12,7 +14,7 @@ export const Route = createFileRoute("/_admin/cms/home-sections")({
 
 const KNOWN_SECTION_TYPES = [
   "bestsellers", "new_releases", "staff_picks", "book_row",
-  "category_scroller", "publisher_scroller", "author_section",
+  "category_scroller", "publisher_scroller", "author_section", "custom_book_row",
 ];
 
 // ─── Preset templates ────────────────────────────────────────────────────────
@@ -52,6 +54,18 @@ const PRESETS = [
     apiEndpoint: "/books/staff-picks?limit=12",
     config: '{ "limit": 12 }',
     description: "Curated book row by staff",
+  },
+  {
+    icon: ListChecks,
+    color: "#7C3AED",
+    bg: "#F5F3FF",
+    label: "Custom Book Row",
+    sectionType: "custom_book_row",
+    title: "Our Picks",
+    subTitle: "Handpicked just for you",
+    apiEndpoint: "",
+    config: '{ "bookIds": [] }',
+    description: "Manually pick books to display",
   },
   {
     icon: Rows3,
@@ -108,21 +122,21 @@ function HomeSectionsPage() {
   const [sections, setSections] = useState<HomeSection[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<HomeSection | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
   const [dragOverPreset, setDragOverPreset] = useState<string | null>(null);
+  const sectionsRef = useRef<HomeSection[]>([]);
 
   const fetchSections = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
       const res = await homeSectionService.getAll({ limit: 100 });
+      sectionsRef.current = res.data.data;
       setSections(res.data.data);
       setTotal(res.data.total);
     } catch {
-      setError("Failed to load home sections.");
+      toast.error("Failed to load home sections.");
     } finally {
       setLoading(false);
     }
@@ -135,7 +149,7 @@ function HomeSectionsPage() {
       const updated = await homeSectionService.toggle(section.id, !section.isActive);
       setSections((prev) => prev.map((s) => (s.id === section.id ? { ...s, ...updated } : s)));
     } catch {
-      alert("Failed to update visibility.");
+      toast.error("Failed to update visibility.");
     }
   };
 
@@ -146,7 +160,7 @@ function HomeSectionsPage() {
       setSections((prev) => prev.filter((s) => s.id !== id));
       setTotal((t) => t - 1);
     } catch {
-      alert("Failed to delete section.");
+      toast.error("Failed to delete section.");
     }
   };
 
@@ -203,15 +217,16 @@ function HomeSectionsPage() {
       const next = [...prev];
       const [item] = next.splice(from, 1);
       next.splice(to, 0, item);
+      sectionsRef.current = next;
       return next;
     });
   };
   const handleDragEnd = async () => {
     setDragging(null);
     try {
-      await homeSectionService.reorder(sections.map((s) => s.id));
+      await homeSectionService.reorder(sectionsRef.current.map((s) => s.id));
     } catch {
-      alert("Failed to save order.");
+      toast.error("Failed to save order.");
     }
   };
 
@@ -279,8 +294,6 @@ function HomeSectionsPage() {
             <Loader2 className="h-5 w-5 animate-spin mr-2" />
             <span className="text-[13px]">Loading…</span>
           </div>
-        ) : error ? (
-          <div className="flex items-center justify-center py-20 text-red-500 text-[13px]">{error}</div>
         ) : (
           <div
             className={`space-y-2 min-h-[80px] rounded-xl transition-colors ${
@@ -390,7 +403,6 @@ function SectionModal({
   onClose: () => void;
   onSaved: (s: HomeSection, isNew: boolean) => void;
 }) {
-  // If id is empty string it means it came from a preset (new, pre-filled)
   const isNew = !section || section.id === "";
   const [form, setForm] = useState({
     sectionType: section?.sectionType ?? "",
@@ -401,11 +413,87 @@ function SectionModal({
     config: section?.config ? JSON.stringify(section.config, null, 2) : "",
   });
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  // ── Book picker state (for custom_book_row) ──────────────────────────────
+  const [bookSearch, setBookSearch] = useState("");
+  const [bookResults, setBookResults] = useState<any[]>([]);
+  const [bookSearching, setBookSearching] = useState(false);
+  const [bookPage, setBookPage] = useState(1);
+  const [bookHasMore, setBookHasMore] = useState(false);
+  const [bookLoadingMore, setBookLoadingMore] = useState(false);
+  const bookSearchRef = useRef("");
+  const bookListRef = useRef<HTMLDivElement>(null);
+  const [pickedBooks, setPickedBooks] = useState<any[]>([]);
+
+  // Load existing picked books when editing a custom_book_row
+  useEffect(() => {
+    if (!section?.id || section.sectionType !== "custom_book_row") return;
+    const ids: string[] = section.config?.bookIds ?? [];
+    if (!ids.length) return;
+    Promise.all(ids.map((id) => booksService.findOne(id).catch(() => null)))
+      .then((books) => setPickedBooks(books.filter(Boolean)));
+  }, [section?.id]);
+
+  const BOOK_LIMIT = 20;
+
+  const fetchBooks = useCallback(async (q: string, page: number, append: boolean) => {
+    if (!q.trim()) { setBookResults([]); setBookHasMore(false); return; }
+    page === 1 ? setBookSearching(true) : setBookLoadingMore(true);
+    try {
+      const res = await booksService.getAll({ search: q, limit: BOOK_LIMIT, page, status: "ACTIVE" });
+      const items = res.data ?? [];
+      const total = res.total ?? 0;
+      setBookResults((prev) => append ? [...prev, ...items] : items);
+      setBookHasMore(page * BOOK_LIMIT < total);
+      setBookPage(page);
+    } catch {
+      if (!append) setBookResults([]);
+    } finally {
+      setBookSearching(false);
+      setBookLoadingMore(false);
+    }
+  }, []);
+
+  // Debounced search — reset to page 1 on new query
+  useEffect(() => {
+    bookSearchRef.current = bookSearch;
+    const t = setTimeout(() => {
+      setBookPage(1);
+      setBookHasMore(false);
+      fetchBooks(bookSearch, 1, false);
+    }, 350);
+    return () => clearTimeout(t);
+  }, [bookSearch, fetchBooks]);
+
+  // Infinite scroll inside the results dropdown
+  useEffect(() => {
+    const el = bookListRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      if (bookLoadingMore || !bookHasMore) return;
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) {
+        fetchBooks(bookSearchRef.current, bookPage + 1, true);
+      }
+    };
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [bookHasMore, bookLoadingMore, bookPage, fetchBooks]);
+
+  const addBook = (book: any) => {
+    setPickedBooks((prev) => prev.find((b) => b.id === book.id) ? prev : [...prev, book]);
+  };
+  const removeBook = (id: string) => setPickedBooks((prev) => prev.filter((b) => b.id !== id));
+  const moveBook = (from: number, to: number) => {
+    setPickedBooks((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
+  };
 
   const set = (key: string, value: any) => setForm((f) => ({ ...f, [key]: value }));
 
-  // When admin picks a preset from the dropdown inside the modal
   const applyPreset = (presetType: string) => {
     const preset = PRESETS.find((p) => p.sectionType === presetType);
     if (!preset) return;
@@ -422,42 +510,56 @@ function SectionModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.sectionType.trim() || !form.title.trim()) {
-      setError("Section type and title are required.");
+      toast.error("Section type and title are required.");
       return;
     }
     let config: Record<string, any> | null = null;
-    if (form.config.trim()) {
+    if (form.sectionType === "custom_book_row") {
+      // For custom sections, build config from picked books and set apiEndpoint
+      config = { bookIds: pickedBooks.map((b) => b.id) };
+    } else if (form.config.trim()) {
       try { config = JSON.parse(form.config); }
-      catch { setError("Config must be valid JSON."); return; }
+      catch { toast.error("Config must be valid JSON."); return; }
     }
     setSaving(true);
-    setError(null);
     try {
-      const payload = {
+      const payload: any = {
         sectionType: form.sectionType.trim(),
         title: form.title.trim(),
         subTitle: form.subTitle.trim() || null,
-        apiEndpoint: form.apiEndpoint.trim() || null,
         isActive: form.isActive,
         config,
       };
+      // For custom_book_row the apiEndpoint is set after save (needs the section id)
+      if (form.sectionType !== "custom_book_row") {
+        payload.apiEndpoint = form.apiEndpoint.trim() || null;
+      }
       const saved = isNew
-        ? await homeSectionService.create(payload as any)
+        ? await homeSectionService.create(payload)
         : await homeSectionService.update(section!.id, payload);
-      onSaved(saved, isNew);
+      // Now set the apiEndpoint to point to this section's books endpoint
+      if (form.sectionType === "custom_book_row") {
+        const withEndpoint = await homeSectionService.update(saved.id, {
+          apiEndpoint: `/home-sections/${saved.id}/books`,
+        });
+        onSaved(withEndpoint, isNew);
+      } else {
+        onSaved(saved, isNew);
+      }
     } catch {
-      setError("Failed to save. Please try again.");
+      toast.error("Failed to save. Please try again.");
     } finally {
       setSaving(false);
     }
   };
 
   const matchedPreset = PRESETS.find((p) => p.sectionType === form.sectionType);
+  const isCustom = form.sectionType === "custom_book_row";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4" onClick={onClose}>
-      <div className="w-full max-w-lg rounded-xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between border-b border-[#E5E7EB] px-5 py-4">
+      <div className="w-full max-w-3xl rounded-xl bg-white shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between border-b border-[#E5E7EB] px-6 py-4">
           <div className="flex items-center gap-2">
             {matchedPreset && (() => {
               const Icon = matchedPreset.icon;
@@ -474,12 +576,11 @@ function SectionModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
 
-          {/* Quick-fill from preset */}
           {isNew && (
             <Field label="Quick fill from template">
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
                 {PRESETS.map((p) => {
                   const Icon = p.icon;
                   const active = form.sectionType === p.sectionType;
@@ -489,9 +590,7 @@ function SectionModal({
                       type="button"
                       onClick={() => applyPreset(p.sectionType)}
                       className={`flex flex-col items-center gap-1 rounded-lg border p-2 text-center transition-all ${
-                        active
-                          ? "border-[#4F46E5] bg-[#EEF2FF]"
-                          : "border-[#E5E7EB] hover:border-[#4F46E5] hover:bg-[#F9FAFB]"
+                        active ? "border-[#4F46E5] bg-[#EEF2FF]" : "border-[#E5E7EB] hover:border-[#4F46E5] hover:bg-[#F9FAFB]"
                       }`}
                     >
                       <div className="flex h-6 w-6 items-center justify-center rounded-md" style={{ background: p.bg }}>
@@ -505,81 +604,138 @@ function SectionModal({
             </Field>
           )}
 
-          <Field label="Section Type *" hint='Identifier used by the frontend e.g. "bestsellers", "hero_banner"'>
-            <input
-              value={form.sectionType}
-              onChange={(e) => set("sectionType", e.target.value)}
-              placeholder="bestsellers"
-              className={inputCls}
-            />
-            {form.sectionType.trim() && !KNOWN_SECTION_TYPES.includes(form.sectionType.trim()) && (
-              <div className="mt-1.5 flex items-start gap-1.5 rounded-md bg-[#FEF9C3] border border-[#FDE047] px-3 py-2">
-                <span className="text-[#854D0E] text-[11px] leading-snug">
-                  ⚠️ <strong>"{form.sectionType.trim()}"</strong> is not a known section type. The homepage will not render this section until a developer adds support for it in the frontend code. Use a preset template above to avoid this.
-                </span>
-              </div>
-            )}
-          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Section Type *" hint='e.g. "bestsellers", "hero_banner"'>
+              <input
+                value={form.sectionType}
+                onChange={(e) => set("sectionType", e.target.value)}
+                placeholder="bestsellers"
+                className={inputCls}
+              />
+              {form.sectionType.trim() && !KNOWN_SECTION_TYPES.includes(form.sectionType.trim()) && (
+                <div className="mt-1.5 flex items-start gap-1.5 rounded-md bg-[#FEF9C3] border border-[#FDE047] px-3 py-2">
+                  <span className="text-[#854D0E] text-[11px] leading-snug">
+                    ⚠️ <strong>"{form.sectionType.trim()}"</strong> is not a known section type.
+                  </span>
+                </div>
+              )}
+            </Field>
 
-          <Field label="Title *">
-            <input
-              value={form.title}
-              onChange={(e) => set("title", e.target.value)}
-              placeholder="Bestsellers this week"
-              className={inputCls}
-            />
-          </Field>
+            <Field label="Title *">
+              <input value={form.title} onChange={(e) => set("title", e.target.value)} placeholder="Our Picks" className={inputCls} />
+            </Field>
 
-          <Field label="Sub Title">
-            <input
-              value={form.subTitle}
-              onChange={(e) => set("subTitle", e.target.value)}
-              placeholder="Most loved by readers"
-              className={inputCls}
-            />
-          </Field>
+            <Field label="Sub Title">
+              <input value={form.subTitle} onChange={(e) => set("subTitle", e.target.value)} placeholder="Handpicked just for you" className={inputCls} />
+            </Field>
+          </div>
 
-          <Field label="API Endpoint" hint="Backend endpoint that provides data for this section">
-            <input
-              value={form.apiEndpoint}
-              onChange={(e) => set("apiEndpoint", e.target.value)}
-              placeholder="/books/public?filter=bestsellers&limit=10"
-              className={`${inputCls} font-mono text-[12px]`}
-            />
-          </Field>
+          {/* Custom book row — book picker */}
+          {isCustom && (
+            <Field label={`Pick Books (${pickedBooks.length} selected)`} hint="Search and add books. Drag rows to reorder.">
+              <input
+                value={bookSearch}
+                onChange={(e) => setBookSearch(e.target.value)}
+                placeholder="Search by title or author…"
+                className={inputCls}
+              />
+              {/* Search results */}
+              {bookSearching && <p className="mt-1 text-[11px] text-[#9CA3AF]">Searching…</p>}
+              {!bookSearching && bookResults.length > 0 && (
+                <div ref={bookListRef} className="mt-1 max-h-52 overflow-y-auto rounded-md border border-[#E5E7EB] bg-white">
+                  {bookResults.map((b) => {
+                    const already = pickedBooks.some((p) => p.id === b.id);
+                    const outOfStock = b.quantity === 0;
+                    const blocked = already || outOfStock;
+                    return (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={() => addBook(b)}
+                        disabled={blocked}
+                        className={`flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] transition hover:bg-[#F9FAFB] ${
+                          blocked ? "opacity-40 cursor-not-allowed" : ""
+                        }`}
+                      >
+                        {b.coverImage && <img src={b.coverImage} className="h-8 w-6 rounded object-cover shrink-0" />}
+                        <div className="min-w-0">
+                          <p className="truncate font-medium">{b.title}</p>
+                          <p className="truncate text-[10px] text-[#9CA3AF]">{b.author?.name ?? ""}</p>
+                        </div>
+                        {already
+                          ? <span className="ml-auto text-[10px] text-[#10B981]">Added</span>
+                          : outOfStock
+                            ? <span className="ml-auto text-[10px] text-[#EF4444]">Out of stock</span>
+                            : <span className="ml-auto text-[10px] text-[#4F46E5]">+ Add</span>}
+                      </button>
+                    );
+                  })}
+                  {bookLoadingMore && (
+                    <div className="flex items-center justify-center gap-1.5 py-2 text-[11px] text-[#9CA3AF]">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Loading more…
+                    </div>
+                  )}
+                  {!bookLoadingMore && !bookHasMore && bookResults.length > 0 && (
+                    <div className="py-1.5 text-center text-[10px] text-[#D1D5DB]">All results shown</div>
+                  )}
+                </div>
+              )}
+              {/* Picked list */}
+              {pickedBooks.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {pickedBooks.map((b, idx) => (
+                    <div key={b.id} className="flex items-center gap-2 rounded-md border border-[#E5E7EB] bg-[#F9FAFB] px-2 py-1.5">
+                      <span className="w-4 text-center text-[10px] text-[#9CA3AF] shrink-0">{idx + 1}</span>
+                      {b.coverImage && <img src={b.coverImage} className="h-7 w-5 rounded object-cover shrink-0" />}
+                      <span className="flex-1 truncate text-[12px] font-medium">{b.title}</span>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button type="button" disabled={idx === 0} onClick={() => moveBook(idx, idx - 1)}
+                          className="rounded px-1 text-[11px] text-[#9CA3AF] hover:text-[#374151] disabled:opacity-30">↑</button>
+                        <button type="button" disabled={idx === pickedBooks.length - 1} onClick={() => moveBook(idx, idx + 1)}
+                          className="rounded px-1 text-[11px] text-[#9CA3AF] hover:text-[#374151] disabled:opacity-30">↓</button>
+                        <button type="button" onClick={() => removeBook(b.id)}
+                          className="rounded p-0.5 text-[#9CA3AF] hover:text-[#EF4444]"><X className="h-3 w-3" /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Field>
+          )}
 
-          <Field label="Extra Config (JSON)" hint='Optional e.g. { "limit": 10, "layout": "grid" }'>
-            <textarea
-              value={form.config}
-              onChange={(e) => set("config", e.target.value)}
-              rows={3}
-              placeholder='{ "limit": 10 }'
-              className={`${inputCls} h-auto font-mono text-[11px] resize-none py-2`}
-            />
-          </Field>
+          {/* API endpoint + config side by side */}
+          {!isCustom && (
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="API Endpoint" hint="Backend endpoint for this section's data">
+                <input
+                  value={form.apiEndpoint}
+                  onChange={(e) => set("apiEndpoint", e.target.value)}
+                  placeholder="/books/public?filter=bestsellers&limit=10"
+                  className={`${inputCls} font-mono text-[12px]`}
+                />
+              </Field>
+              <Field label="Extra Config (JSON)" hint='Optional e.g. { "limit": 10 }'>
+                <textarea
+                  value={form.config}
+                  onChange={(e) => set("config", e.target.value)}
+                  rows={1}
+                  placeholder='{ "limit": 10 }'
+                  className={`${inputCls} h-9 font-mono text-[11px] resize-none py-2`}
+                />
+              </Field>
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
-              id="isActive"
-              checked={form.isActive}
-              onChange={(e) => set("isActive", e.target.checked)}
-              className="h-4 w-4 rounded border-[#E5E7EB] accent-[#4F46E5]"
-            />
+            <input type="checkbox" id="isActive" checked={form.isActive} onChange={(e) => set("isActive", e.target.checked)}
+              className="h-4 w-4 rounded border-[#E5E7EB] accent-[#4F46E5]" />
             <label htmlFor="isActive" className="text-[13px] text-[#374151]">Visible on homepage</label>
           </div>
 
-          {error && <p className="text-[12px] text-red-500">{error}</p>}
-
-          <div className="flex justify-end gap-2 pt-1">
-            <button type="button" onClick={onClose} className="h-8 rounded-md border border-[#E5E7EB] px-4 text-[12px] text-[#374151] hover:bg-[#F3F4F6]">
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={saving}
-              className="h-8 rounded-md bg-[#4F46E5] px-4 text-[12px] font-medium text-white disabled:opacity-50 hover:bg-[#4338CA]"
-            >
+          <div className="flex justify-end gap-2 pt-2">
+            <button type="button" onClick={onClose} className="h-8 rounded-md border border-[#E5E7EB] px-4 text-[12px] text-[#374151] hover:bg-[#F3F4F6]">Cancel</button>
+            <button type="submit" disabled={saving}
+              className="h-8 rounded-md bg-[#4F46E5] px-4 text-[12px] font-medium text-white disabled:opacity-50 hover:bg-[#4338CA]">
               {saving ? "Saving…" : isNew ? "Add Section" : "Save Changes"}
             </button>
           </div>

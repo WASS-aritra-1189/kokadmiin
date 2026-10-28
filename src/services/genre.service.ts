@@ -9,6 +9,7 @@ export interface Genre {
   level: number | null;
   shortCode: string | null;
   parentId: string | null;
+  showInEcommerce: boolean;
   createdAt: string;
 }
 
@@ -27,5 +28,6 @@ export const genreService = {
   create: (data: GenrePayload) => api.post("/genres", data).then(wrap),
   update: (id: string, data: Partial<GenrePayload>) => api.patch(`/genres/${id}`, data).then(wrap),
   changeStatus: (id: string, status: string) => api.patch(`/genres/status/${id}`, { status }).then(wrap),
+  setEcommerceVisibility: (id: string, show: boolean) => api.patch(`/genres/ecommerce/${id}`, { showInEcommerce: show }).then(wrap),
   delete: (id: string) => api.delete(`/genres/${id}`).then(wrap),
 };

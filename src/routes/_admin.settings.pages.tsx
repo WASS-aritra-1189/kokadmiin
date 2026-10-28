@@ -39,7 +39,6 @@ function PagesSettings() {
       });
       setPages(res.data || []);
     } catch (error) {
-      console.error("Failed to load pages:", error);
     } finally {
       setLoading(false);
     }
@@ -62,7 +61,6 @@ function PagesSettings() {
       handleCancel();
       loadPages();
     } catch (error: any) {
-      console.error("Failed to save page:", error);
       const msg = error?.response?.data?.data?.errors?.[0] || error?.response?.data?.message || "Failed to save page";
       toast.error(msg);
     } finally {
@@ -104,7 +102,6 @@ function PagesSettings() {
       toast.success("Status updated successfully");
       loadPages();
     } catch (error: any) {
-      console.error("Failed to update status:", error);
       toast.error(error?.response?.data?.message || "Failed to update status");
     }
   };

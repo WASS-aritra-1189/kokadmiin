@@ -68,10 +68,13 @@ function FeaturedCell({ row, onSaved }: { row: any; onSaved: () => void }) {
 function Page() {
   const [reload, setReload] = useState(0);
   const doReload = () => setReload((n) => n + 1);
+  const [featuredFilter, setFeaturedFilter] = useState<"" | "true" | "false">("" );
+
+  const extraParams = featuredFilter !== "" ? { isFeatured: featuredFilter === "true" } : {};
 
   return (
     <CatalogApiPage
-      key={reload}
+      key={reload + featuredFilter}
       title="Publishers"
       description="Publishing houses whose imprints you carry. Contact, imprints, catalog size and status."
       newLabel="New publisher"
@@ -82,6 +85,21 @@ function Page() {
       deleteFn={publisherService.delete}
       uploadProfileImageFn={handleLogoUpload}
       profileImageField="logo"
+      activeExtraParams={extraParams}
+      extraFilters={
+        <label className="flex items-center gap-1.5 text-[11px] text-[#6B7280]">
+          Featured:
+          <select
+            value={featuredFilter}
+            onChange={(e) => setFeaturedFilter(e.target.value as "" | "true" | "false")}
+            className="h-8 rounded-md border border-[#E5E7EB] bg-white px-2 text-[12px] text-[#111827] outline-none"
+          >
+            <option value="">All</option>
+            <option value="true">⭐ Featured</option>
+            <option value="false">☆ Not featured</option>
+          </select>
+        </label>
+      }
       defaultForm={{ name: "", description: "", email: "", phone: "", website: "", address: "", status: "ACTIVE" }}
       columns={[
         {

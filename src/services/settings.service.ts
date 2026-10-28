@@ -34,6 +34,7 @@ export interface Setting {
   returnWindowDays: number;
   exchangeWindowDays: number;
   freeShippingAmount: number;
+  showBunchButton: boolean;
   status: string;
   createdAt: string;
   updatedAt: string;

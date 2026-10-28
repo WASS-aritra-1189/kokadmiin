@@ -71,6 +71,7 @@ interface FetchTransactionsParams {
   paymentStatus?: string;
   dateFrom?: string;
   dateTo?: string;
+  accountId?: string;
 }
 
 export const transactionsService = {
@@ -83,7 +84,20 @@ export const transactionsService = {
     if (params.paymentStatus) searchParams.set("paymentStatus", params.paymentStatus);
     if (params.dateFrom) searchParams.set("dateFrom", params.dateFrom);
     if (params.dateTo) searchParams.set("dateTo", params.dateTo);
+    if (params.accountId) searchParams.set("accountId", params.accountId);
     return api.get<PaginatedTransactions>(`/transactions?${searchParams}`).then(wrap);
+  },
+
+  findByUser(userId: string, params: FetchTransactionsParams = {}) {
+    const searchParams = new URLSearchParams();
+    if (params.page) searchParams.set("page", String(params.page));
+    if (params.limit) searchParams.set("limit", String(params.limit));
+    if (params.search) searchParams.set("search", params.search);
+    if (params.orderStatus) searchParams.set("orderStatus", params.orderStatus);
+    if (params.paymentStatus) searchParams.set("paymentStatus", params.paymentStatus);
+    if (params.dateFrom) searchParams.set("dateFrom", params.dateFrom);
+    if (params.dateTo) searchParams.set("dateTo", params.dateTo);
+    return api.get<PaginatedTransactions>(`/transactions/user/${userId}?${searchParams}`).then(wrap);
   },
 
   findAllCod(params: Omit<FetchTransactionsParams, 'orderStatus' | 'paymentStatus'> & { status?: string } = {}) {

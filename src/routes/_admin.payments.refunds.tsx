@@ -1,6 +1,8 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Search, X, ExternalLink, IndianRupee, RotateCcw } from "lucide-react";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
 import { transactionsService, type Transaction } from "@/services/transactions.service";
 import { PaginationBar } from "@/components/ui/pagination-bar";
 
@@ -58,8 +60,10 @@ function RefundsPage() {
   const [data, setData] = useState<{ data: Transaction[]; total: number; stats?: RefundStats } | null>(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Transaction | null>(null);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
-  const load = async (p = page, search = q, rs = refundStatus) => {
+  const load = async (p = page, search = q, rs = refundStatus, df = dateFrom, dt = dateTo) => {
     setLoading(true);
     try {
       const res = await transactionsService.findAllRefunds({
@@ -67,17 +71,17 @@ function RefundsPage() {
         limit: LIMIT,
         ...(search ? { search } : {}),
         ...(rs ? { status: rs } : {}),
+        ...(df ? { dateFrom: df } : {}),
+        ...(dt ? { dateTo: dt } : {}),
       });
-        setData(res ?? { data: [], total: 0, stats: undefined });
-    
+      setData(res ?? { data: [], total: 0, stats: undefined });
     } catch (e) {
-      console.error(e);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => { load(); }, [page, refundStatus]);
+  useEffect(() => { load(); }, [page, refundStatus, dateFrom, dateTo]);
 
   const totalPages = data ? Math.max(1, Math.ceil(data.total / LIMIT)) : 1;
 
@@ -115,6 +119,12 @@ function RefundsPage() {
             <option value="">All Refund Status</option>
             {REFUND_STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
           </select>
+          <DateRangeFilter
+            from={dateFrom} to={dateTo}
+            onFromChange={(v) => { setDateFrom(v); setPage(1); }}
+            onToChange={(v) => { setDateTo(v); setPage(1); }}
+            onClear={() => { setDateFrom(""); setDateTo(""); setPage(1); }}
+          />
         </div>
 
         {/* Table */}

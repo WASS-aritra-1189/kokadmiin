@@ -22,9 +22,9 @@ export const NAV: NavGroup[] = [
   {
     label: "Bunch", icon: Package,
     items: [
-      { label: "Bunches", to: "/bunch" },
       { label: "Bunch Orders", to: "/bunch/orders" },
       { label: "Bunch Order Analysis", to: "/bunch/order-analysis" },
+      { label: "Bunches", to: "/bunch" },
       { label: "Returns", to: "/bunch/returns" },
       { label: "Exchanges", to: "/bunch/exchanges" },
     ],
@@ -39,7 +39,7 @@ export const NAV: NavGroup[] = [
   {
     label: "Catalog", icon: Tags,
     items: [
-      { label: "Categories", to: "/catalog/categories" },
+      // { label: "Categories", to: "/catalog/categories" },
       { label: "Genres", to: "/catalog/genres" },
       { label: "Subjects", to: "/catalog/subjects" },
       { label: "Authors", to: "/catalog/authors" },

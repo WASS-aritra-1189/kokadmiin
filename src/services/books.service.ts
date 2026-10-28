@@ -76,6 +76,9 @@ export interface BooksQuery {
   status?: string;
   minPrice?: number;
   maxPrice?: number;
+  isNewRelease?: boolean;
+  isStaffPick?: boolean;
+  isBestSeller?: boolean;
 }
 
 export interface CreateBookPayload {

@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, Search, X, Edit3, Trash2 } from "lucide-react";
@@ -169,14 +170,12 @@ function DesignationSheet({ item, onClose, onSaved }: { item: Designation | null
     status: item?.status ?? "ACTIVE",
   });
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const setField = (key: keyof DesignationPayload, value: string) => setForm((f) => ({ ...f, [key]: value }));
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
-    setError(null);
 
     try {
       if (isEdit && item) {
@@ -186,7 +185,7 @@ function DesignationSheet({ item, onClose, onSaved }: { item: Designation | null
       }
       onSaved();
     } catch (err: any) {
-      setError(err?.response?.data?.message ?? err?.message ?? "Unable to save designation.");
+      toast.error(err?.response?.data?.message ?? err?.message ?? "Unable to save designation.");
     } finally {
       setSaving(false);
     }
